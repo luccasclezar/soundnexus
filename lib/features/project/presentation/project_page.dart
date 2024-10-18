@@ -2,14 +2,73 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:soundnexus/features/project/presentation/project_page_controller.dart';
 import 'package:soundnexus/features/projects/data/projects_repository.dart';
 import 'package:soundnexus/features/projects/domain/audio_file.dart';
+import 'package:soundnexus/features/projects/domain/project.dart';
+import 'package:soundnexus/global/widgets/spin_box.dart';
+import 'package:soundnexus/main.dart';
 
 class ProjectPage extends ConsumerWidget {
   const ProjectPage({required this.projectId, super.key});
 
   final String projectId;
+
+  Future<void> _onSettingsPressed(BuildContext context, WidgetRef ref) async {
+    final controller =
+        ref.read(projectPageControllerProvider(projectId).notifier);
+    final project = ref.read(projectProvider(projectId)).value!;
+
+    final newProject = await showDialog<Project>(
+      context: context,
+      builder: (context) {
+        var newProject = project.copyWith();
+
+        return AlertDialog(
+          actions: [
+            TextButton(
+              onPressed: () => navigatorKey.currentContext!.pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => navigatorKey.currentContext!.pop(newProject),
+              child: const Text('Save'),
+            ),
+          ],
+          title: const Text('Settings'),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  title: const Text('Columns'),
+                  trailing: SpinBox(
+                    initialValue: project.columns,
+                    onValueChanged: (value) =>
+                        newProject = newProject.copyWith(columns: value),
+                  ),
+                ),
+                ListTile(
+                  title: const Text('Rows'),
+                  trailing: SpinBox(
+                    initialValue: project.rows,
+                    onValueChanged: (value) =>
+                        newProject = newProject.copyWith(rows: value),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (newProject != null) {
+      await controller.updateProject(newProject);
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -17,6 +76,16 @@ class ProjectPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        actions: projectAsync.when(
+          data: (data) => [
+            IconButton(
+              onPressed: () => _onSettingsPressed(context, ref),
+              icon: const Icon(Icons.settings_rounded),
+            ),
+          ],
+          error: (error, stackTrace) => null,
+          loading: () => null,
+        ),
         title: projectAsync.when(
           data: (data) => Text(data.name),
           error: (error, stackTrace) => const SizedBox.shrink(),

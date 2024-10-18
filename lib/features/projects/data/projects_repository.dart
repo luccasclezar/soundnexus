@@ -49,6 +49,7 @@ abstract class ProjectsRepository {
     void Function(void Function()) subscriptionCallback,
   );
   Stream<List<ProjectInfo>> streamProjects();
+  Future<void> updateProject(Project value);
 }
 
 class LocalProjectsRepository implements ProjectsRepository {
@@ -170,5 +171,10 @@ class LocalProjectsRepository implements ProjectsRepository {
     );
 
     return controller.stream;
+  }
+
+  @override
+  Future<void> updateProject(Project value) {
+    return _getStorage.write('project_${value.id}', value.toJson());
   }
 }

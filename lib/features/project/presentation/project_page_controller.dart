@@ -36,6 +36,10 @@ class ProjectPageController extends _$ProjectPageController {
   void stop() {
     state = state.copyWith(isPlaying: false);
   }
+
+  Future<void> updateProject(Project value) {
+    return ref.read(projectsRepositoryProvider).updateProject(value);
+  }
 }
 
 @freezed
