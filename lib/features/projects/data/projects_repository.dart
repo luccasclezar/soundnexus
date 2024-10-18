@@ -43,7 +43,7 @@ abstract class ProjectsRepository {
   Future<void> addProject(ProjectInfo value);
   Future<void> deleteProject(String id);
   Future<Project> getProject(String projectId);
-  Future<void> setAudioFile(String projectId, AudioFile audio, int x, int y);
+  Future<void> setAudioFile(String projectId, AudioFile? audio, int x, int y);
   Stream<Project> streamProject(
     String projectId,
     void Function(void Function()) subscriptionCallback,
@@ -103,17 +103,23 @@ class LocalProjectsRepository implements ProjectsRepository {
   @override
   Future<void> setAudioFile(
     String projectId,
-    AudioFile audio,
+    AudioFile? audio,
     int x,
     int y,
   ) async {
     final project = await getProject(projectId);
 
+    final audioFiles = {...project.audioFiles};
+
+    if (audio == null) {
+      audioFiles.remove('$x:$y');
+    } else {
+      audioFiles['$x:$y'] = audio;
+    }
+
     await _getStorage.write(
       'project_$projectId',
-      project
-          .copyWith(audioFiles: {...project.audioFiles}..['$x:$y'] = audio)
-          .toJson(),
+      project.copyWith(audioFiles: audioFiles).toJson(),
     );
   }
 

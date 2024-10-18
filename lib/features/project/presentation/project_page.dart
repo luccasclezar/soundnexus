@@ -213,42 +213,105 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
               child: Material(
                 clipBehavior: Clip.hardEdge,
                 type: MaterialType.transparency,
-                // TODO(Luccas): Unnest these ternaries.
                 child: isDropping
-                    ? const Text('Add audio here')
+                    ? const Center(child: Text('Add audio here'))
                     : (audioFile != null
-                        ? InkWell(
-                            onTap: () async {
-                              if (player.state == PlayerState.playing) {
-                                await player.pause();
-                              } else {
-                                await player
-                                    .play(DeviceFileSource(audioFile.path));
-                              }
-                            },
-                            child: Column(
-                              children: [
-                                Expanded(
-                                  child: Center(
-                                    child: Text(audioFile.name),
-                                  ),
-                                ),
-                                Slider(
-                                  value: audioFile.volume,
-                                  onChanged: (value) => controller.setAudioFile(
-                                    audioFile.copyWith(volume: value),
-                                    x,
-                                    y,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        ? _SoundBoardTileContent(
+                            audioFile: audioFile,
+                            player: player,
+                            projectId: widget.projectId,
+                            x: x,
+                            y: y,
                           )
                         : null),
               ),
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _SoundBoardTileContent extends ConsumerWidget {
+  const _SoundBoardTileContent({
+    required this.audioFile,
+    required this.player,
+    required this.projectId,
+    required this.x,
+    required this.y,
+  });
+
+  final AudioFile audioFile;
+  final AudioPlayer player;
+  final String projectId;
+  final int x;
+  final int y;
+
+  Future<void> _onDelete(WidgetRef ref) async {
+    await ref
+        .read(projectPageControllerProvider(projectId).notifier)
+        .setAudioFile(null, x, y);
+  }
+
+  Future<void> _onTap() async {
+    if (player.state == PlayerState.playing) {
+      await player.pause();
+    } else {
+      await player.play(DeviceFileSource(audioFile.path));
+    }
+  }
+
+  Future<void> _onSecondaryTap(
+    BuildContext context,
+    WidgetRef ref,
+    TapUpDetails details,
+  ) async {
+    final dx = details.globalPosition.dx;
+    final dy = details.globalPosition.dy;
+    final position = RelativeRect.fromLTRB(
+      dx,
+      dy,
+      dx,
+      0,
+    );
+
+    await showMenu(
+      context: context,
+      position: position,
+      items: [
+        PopupMenuItem<void>(
+          child: const Text('Delete'),
+          onTap: () => _onDelete(ref),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller =
+        ref.watch(projectPageControllerProvider(projectId).notifier);
+
+    return InkWell(
+      onTap: _onTap,
+      onSecondaryTapUp: (d) => _onSecondaryTap(context, ref, d),
+      child: Column(
+        children: [
+          Expanded(
+            child: Center(
+              child: Text(audioFile.name),
+            ),
+          ),
+          Slider(
+            value: audioFile.volume,
+            onChanged: (value) => controller.setAudioFile(
+              audioFile.copyWith(volume: value),
+              x,
+              y,
+            ),
+          ),
+        ],
       ),
     );
   }

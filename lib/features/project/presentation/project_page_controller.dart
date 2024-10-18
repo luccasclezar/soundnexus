@@ -23,7 +23,7 @@ class ProjectPageController extends _$ProjectPageController {
   ) =>
       previous != next;
 
-  Future<void> setAudioFile(AudioFile audio, int x, int y) async {
+  Future<void> setAudioFile(AudioFile? audio, int x, int y) async {
     await ref
         .read(projectsRepositoryProvider)
         .setAudioFile(projectId, audio, x, y);
