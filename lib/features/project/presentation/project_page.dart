@@ -131,7 +131,6 @@ class ControlBar extends ConsumerWidget {
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 200),
           child: Slider(
-            max: 1.2,
             value: model.volume,
             onChanged: controller.setVolume,
           ),
