@@ -10,6 +10,8 @@ part 'project_page_controller.g.dart';
 
 @riverpod
 class ProjectPageController extends _$ProjectPageController {
+  late final repo = ref.read(projectsRepositoryProvider);
+
   @override
   ProjectControllerModel build(String projectId) {
     final project = ref.watch(projectProvider(projectId)).value;
@@ -24,9 +26,7 @@ class ProjectPageController extends _$ProjectPageController {
       previous != next;
 
   Future<void> setAudioFile(AudioFile? audio, int x, int y) async {
-    await ref
-        .read(projectsRepositoryProvider)
-        .setAudioFile(projectId, audio, x, y);
+    await repo.setAudioFile(projectId, audio, x, y);
   }
 
   void setVolume(double value) {
@@ -38,7 +38,7 @@ class ProjectPageController extends _$ProjectPageController {
   }
 
   Future<void> updateProject(Project value) {
-    return ref.read(projectsRepositoryProvider).updateProject(value);
+    return repo.updateProject(value);
   }
 }
 

@@ -7,6 +7,7 @@ import 'package:soundnexus/features/project/presentation/project_page_controller
 import 'package:soundnexus/features/projects/data/projects_repository.dart';
 import 'package:soundnexus/features/projects/domain/audio_file.dart';
 import 'package:soundnexus/features/projects/domain/project.dart';
+import 'package:soundnexus/global/widgets/app_draggable.dart';
 import 'package:soundnexus/global/widgets/spin_box.dart';
 import 'package:soundnexus/main.dart';
 
@@ -199,8 +200,6 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     final x = widget.x;
     final y = widget.y;
 
@@ -272,28 +271,53 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
                 y,
               );
             },
-            child: Container(
-              width: constraints.maxWidth,
-              height: constraints.maxWidth,
-              decoration: BoxDecoration(
-                border: Border.all(color: theme.colorScheme.outline),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Material(
-                clipBehavior: Clip.hardEdge,
-                type: MaterialType.transparency,
-                child: isDropping
-                    ? const Center(child: Text('Add audio here'))
-                    : (audioFile != null
-                        ? _SoundBoardTileContent(
-                            audioFile: audioFile,
-                            player: player,
-                            projectId: widget.projectId,
-                            x: x,
-                            y: y,
-                          )
-                        : null),
-              ),
+            child: DragTarget<AudioFile>(
+              onAcceptWithDetails: (details) async {
+                final audioFile = details.data;
+
+                final oldX = audioFile.positionX;
+                final oldY = audioFile.positionY;
+
+                final newAudioFile =
+                    audioFile.copyWith(positionX: x, positionY: y);
+
+                await controller.setAudioFile(null, oldX, oldY);
+                await controller.setAudioFile(newAudioFile, x, y);
+              },
+              onWillAcceptWithDetails: (details) {
+                return details.data != audioFile;
+              },
+              builder: (context, candidateData, rejectedData) {
+                return AppDraggable(
+                  data: audioFile,
+                  enabled: audioFile != null,
+                  feedback: SizedBox(
+                    height: constraints.maxWidth,
+                    width: constraints.maxWidth,
+                    child: _SoundBoardTileContent(
+                      audioFile: audioFile,
+                      isDroppingAudio: isDropping || candidateData.isNotEmpty,
+                      player: player,
+                      projectId: widget.projectId,
+                      x: x,
+                      y: y,
+                    ),
+                  ),
+                  type: AppDragType.adaptive,
+                  child: SizedBox(
+                    height: constraints.maxWidth,
+                    width: constraints.maxWidth,
+                    child: _SoundBoardTileContent(
+                      audioFile: audioFile,
+                      isDroppingAudio: isDropping || candidateData.isNotEmpty,
+                      player: player,
+                      projectId: widget.projectId,
+                      x: x,
+                      y: y,
+                    ),
+                  ),
+                );
+              },
             ),
           );
         },
@@ -305,13 +329,15 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
 class _SoundBoardTileContent extends ConsumerWidget {
   const _SoundBoardTileContent({
     required this.audioFile,
+    required this.isDroppingAudio,
     required this.player,
     required this.projectId,
     required this.x,
     required this.y,
   });
 
-  final AudioFile audioFile;
+  final AudioFile? audioFile;
+  final bool isDroppingAudio;
   final AudioPlayer player;
   final String projectId;
   final int x;
@@ -327,7 +353,7 @@ class _SoundBoardTileContent extends ConsumerWidget {
     if (player.state == PlayerState.playing) {
       await player.pause();
     } else {
-      await player.play(DeviceFileSource(audioFile.path));
+      await player.play(DeviceFileSource(audioFile!.path));
     }
   }
 
@@ -359,28 +385,56 @@ class _SoundBoardTileContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+
     final controller =
         ref.watch(projectPageControllerProvider(projectId).notifier);
 
-    return InkWell(
-      onTap: _onTap,
-      onSecondaryTapUp: (d) => _onSecondaryTap(context, ref, d),
-      child: Column(
-        children: [
-          Expanded(
-            child: Center(
-              child: Text(audioFile.name),
-            ),
-          ),
-          Slider(
-            value: audioFile.volume,
-            onChanged: (value) => controller.setAudioFile(
-              audioFile.copyWith(volume: value),
-              x,
-              y,
-            ),
-          ),
-        ],
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outline),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Material(
+        clipBehavior: Clip.hardEdge,
+        type: MaterialType.transparency,
+        child: isDroppingAudio
+            ? const Center(child: Text('Add audio here'))
+            : (audioFile != null
+                ? InkWell(
+                    onTap: audioFile == null ? null : _onTap,
+                    onSecondaryTapUp: audioFile == null
+                        ? null
+                        : (d) => _onSecondaryTap(context, ref, d),
+                    child: Builder(
+                      builder: (context) {
+                        final audioFile = this.audioFile;
+
+                        if (audioFile != null) {
+                          return Column(
+                            children: [
+                              Expanded(
+                                child: Center(
+                                  child: Text(audioFile.name),
+                                ),
+                              ),
+                              Slider(
+                                value: audioFile.volume,
+                                onChanged: (value) => controller.setAudioFile(
+                                  audioFile.copyWith(volume: value),
+                                  x,
+                                  y,
+                                ),
+                              ),
+                            ],
+                          );
+                        } else {
+                          return const SizedBox.shrink();
+                        }
+                      },
+                    ),
+                  )
+                : null),
       ),
     );
   }
