@@ -77,6 +77,7 @@ class SoundNexusApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'SoundNexus',
       theme: createTheme(Colors.indigo),
+      scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
       routerConfig: router,
       builder: (context, child) => Listener(
         onPointerDown: (event) {
