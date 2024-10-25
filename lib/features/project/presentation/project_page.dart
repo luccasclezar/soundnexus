@@ -216,9 +216,11 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
           return;
         }
 
-        // TODO(Luccas): Implement the other AudioFile properties.
         if (previous?.volume != next.volume) {
           player.setVolume(next.volume * model.volume);
+        }
+        if (previous?.path != next.path) {
+          player.setSource(DeviceFileSource(next.path));
         }
       },
     );
