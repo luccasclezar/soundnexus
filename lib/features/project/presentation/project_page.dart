@@ -274,13 +274,39 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
             },
             child: DragTarget<AudioFile>(
               onAcceptWithDetails: (details) async {
-                final audioFile = details.data;
+                final draggedAudioFile = details.data;
 
-                final oldX = audioFile.positionX;
-                final oldY = audioFile.positionY;
+                if (audioFile != null) {
+                  final result = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      actions: [
+                        TextButton(
+                          onPressed: () => context.pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => context.pop(true),
+                          child: const Text('Overwrite'),
+                        ),
+                      ],
+                      content: const Text(
+                        "This will overwrite this tile's current audio.",
+                      ),
+                      title: const Text('Are you sure?'),
+                    ),
+                  );
+
+                  if (result != true) {
+                    return;
+                  }
+                }
+
+                final oldX = draggedAudioFile.positionX;
+                final oldY = draggedAudioFile.positionY;
 
                 final newAudioFile =
-                    audioFile.copyWith(positionX: x, positionY: y);
+                    draggedAudioFile.copyWith(positionX: x, positionY: y);
 
                 await controller.setAudioFile(null, oldX, oldY);
                 await controller.setAudioFile(newAudioFile, x, y);
