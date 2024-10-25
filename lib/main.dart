@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -88,7 +90,15 @@ class SoundNexusApp extends StatelessWidget {
             return;
           }
         },
-        child: child,
+        // Add a top padding on macOS as the titlebar was removed.
+        child: Platform.isMacOS && !kIsWeb
+            ? MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  padding: const EdgeInsets.only(top: 30),
+                ),
+                child: child!,
+              )
+            : child,
       ),
     );
   }
