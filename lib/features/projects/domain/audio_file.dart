@@ -6,6 +6,7 @@ part 'audio_file.g.dart';
 @freezed
 class AudioFile with _$AudioFile {
   const factory AudioFile({
+    required String id,
     required String path,
     required String name,
     required int positionX,

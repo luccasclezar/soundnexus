@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import 'package:audioplayers/audioplayers.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +12,7 @@ import 'package:soundnexus/features/projects/domain/project.dart';
 import 'package:soundnexus/global/widgets/app_draggable.dart';
 import 'package:soundnexus/global/widgets/spin_box.dart';
 import 'package:soundnexus/main.dart';
+import 'package:uuid/v4.dart';
 
 const _maxTileSize = 180.0;
 final _tileBorderRadius = BorderRadius.circular(16);
@@ -210,16 +210,7 @@ class _SoundBoardTile extends ConsumerStatefulWidget {
 }
 
 class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
-  final player = AudioPlayer();
   bool isDropping = false;
-
-  @override
-  Future<void> dispose() async {
-    await player.release();
-    await player.dispose();
-
-    super.dispose();
-  }
 
   Future<void> _onAcceptDrag(
     BuildContext context,
@@ -255,16 +246,10 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
       }
     }
 
-    final oldX = draggedAudioFile.positionX;
-    final oldY = draggedAudioFile.positionY;
-
     final x = widget.x;
     final y = widget.y;
 
-    final newAudioFile = draggedAudioFile.copyWith(positionX: x, positionY: y);
-
-    await controller.setAudioFile(null, oldX, oldY);
-    await controller.setAudioFile(newAudioFile, x, y);
+    await controller.moveAudioFile(draggedAudioFile, x, y);
   }
 
   void _onNativeDragDone(
@@ -293,6 +278,7 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
 
     controller.setAudioFile(
       AudioFile(
+        id: const UuidV4().generate(),
         path: file.path,
         name: name,
         positionX: x,
@@ -314,42 +300,7 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
     final controller =
         ref.watch(projectPageControllerProvider(widget.projectId).notifier);
 
-    final model = ref.watch(projectPageControllerProvider(widget.projectId));
     final audioFile = ref.watch(audioFileProvider(widget.projectId, x, y));
-
-    // Listen to changes on this tile's audioFile and update the player's
-    // properties accordingly.
-    ref.listen(
-      audioFileProvider(widget.projectId, x, y),
-      (previous, next) {
-        if (next == null) {
-          player.stop();
-          return;
-        }
-
-        if (previous?.volume != next.volume) {
-          player.setVolume(next.volume * model.volume);
-        }
-        if (previous?.path != next.path) {
-          player.setSource(DeviceFileSource(next.path));
-        }
-      },
-    );
-
-    // Listen to the global controller and update the player's properties
-    // accordingly.
-    ref.listen(
-      projectPageControllerProvider(widget.projectId),
-      (previous, next) {
-        if (previous == null) {
-          return;
-        }
-
-        if (previous.volume != next.volume) {
-          player.setVolume((audioFile?.volume ?? 1) * next.volume);
-        }
-      },
-    );
 
     return Padding(
       padding: const EdgeInsets.all(8),
@@ -380,7 +331,6 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
                       child: _SoundBoardTileContent(
                         audioFile: audioFile,
                         isDroppingAudio: isDropping || candidateData.isNotEmpty,
-                        player: player,
                         projectId: widget.projectId,
                         x: x,
                         y: y,
@@ -401,7 +351,6 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
                     child: _SoundBoardTileContent(
                       audioFile: audioFile,
                       isDroppingAudio: isDropping || candidateData.isNotEmpty,
-                      player: player,
                       projectId: widget.projectId,
                       x: x,
                       y: y,
@@ -421,7 +370,6 @@ class _SoundBoardTileContent extends ConsumerWidget {
   const _SoundBoardTileContent({
     required this.audioFile,
     required this.isDroppingAudio,
-    required this.player,
     required this.projectId,
     required this.x,
     required this.y,
@@ -429,7 +377,6 @@ class _SoundBoardTileContent extends ConsumerWidget {
 
   final AudioFile? audioFile;
   final bool isDroppingAudio;
-  final AudioPlayer player;
   final String projectId;
   final int x;
   final int y;
@@ -440,12 +387,8 @@ class _SoundBoardTileContent extends ConsumerWidget {
         .setAudioFile(null, x, y);
   }
 
-  Future<void> _onTap() async {
-    if (player.state == PlayerState.playing) {
-      await player.pause();
-    } else {
-      await player.play(DeviceFileSource(audioFile!.path));
-    }
+  Future<void> _onTap(ProjectPageController controller) async {
+    controller.toggleAudio(x, y);
   }
 
   Future<void> _onSecondaryTap(
@@ -501,7 +444,7 @@ class _SoundBoardTileContent extends ConsumerWidget {
             )
           : (audioFile != null
               ? InkWell(
-                  onTap: audioFile == null ? null : _onTap,
+                  onTap: audioFile == null ? null : () => _onTap(controller),
                   onSecondaryTapUp: audioFile == null
                       ? null
                       : (d) => _onSecondaryTap(context, ref, d),

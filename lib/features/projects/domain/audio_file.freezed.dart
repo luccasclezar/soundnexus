@@ -20,6 +20,7 @@ AudioFile _$AudioFileFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$AudioFile {
+  String get id => throw _privateConstructorUsedError;
   String get path => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   int get positionX => throw _privateConstructorUsedError;
@@ -42,7 +43,12 @@ abstract class $AudioFileCopyWith<$Res> {
       _$AudioFileCopyWithImpl<$Res, AudioFile>;
   @useResult
   $Res call(
-      {String path, String name, int positionX, int positionY, double volume});
+      {String id,
+      String path,
+      String name,
+      int positionX,
+      int positionY,
+      double volume});
 }
 
 /// @nodoc
@@ -60,6 +66,7 @@ class _$AudioFileCopyWithImpl<$Res, $Val extends AudioFile>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? id = null,
     Object? path = null,
     Object? name = null,
     Object? positionX = null,
@@ -67,6 +74,10 @@ class _$AudioFileCopyWithImpl<$Res, $Val extends AudioFile>
     Object? volume = null,
   }) {
     return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
       path: null == path
           ? _value.path
           : path // ignore: cast_nullable_to_non_nullable
@@ -100,7 +111,12 @@ abstract class _$$AudioFileImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {String path, String name, int positionX, int positionY, double volume});
+      {String id,
+      String path,
+      String name,
+      int positionX,
+      int positionY,
+      double volume});
 }
 
 /// @nodoc
@@ -116,6 +132,7 @@ class __$$AudioFileImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? id = null,
     Object? path = null,
     Object? name = null,
     Object? positionX = null,
@@ -123,6 +140,10 @@ class __$$AudioFileImplCopyWithImpl<$Res>
     Object? volume = null,
   }) {
     return _then(_$AudioFileImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
       path: null == path
           ? _value.path
           : path // ignore: cast_nullable_to_non_nullable
@@ -151,7 +172,8 @@ class __$$AudioFileImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$AudioFileImpl implements _AudioFile {
   const _$AudioFileImpl(
-      {required this.path,
+      {required this.id,
+      required this.path,
       required this.name,
       required this.positionX,
       required this.positionY,
@@ -160,6 +182,8 @@ class _$AudioFileImpl implements _AudioFile {
   factory _$AudioFileImpl.fromJson(Map<String, dynamic> json) =>
       _$$AudioFileImplFromJson(json);
 
+  @override
+  final String id;
   @override
   final String path;
   @override
@@ -173,7 +197,7 @@ class _$AudioFileImpl implements _AudioFile {
 
   @override
   String toString() {
-    return 'AudioFile(path: $path, name: $name, positionX: $positionX, positionY: $positionY, volume: $volume)';
+    return 'AudioFile(id: $id, path: $path, name: $name, positionX: $positionX, positionY: $positionY, volume: $volume)';
   }
 
   @override
@@ -181,6 +205,7 @@ class _$AudioFileImpl implements _AudioFile {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$AudioFileImpl &&
+            (identical(other.id, id) || other.id == id) &&
             (identical(other.path, path) || other.path == path) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.positionX, positionX) ||
@@ -193,7 +218,7 @@ class _$AudioFileImpl implements _AudioFile {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
-      Object.hash(runtimeType, path, name, positionX, positionY, volume);
+      Object.hash(runtimeType, id, path, name, positionX, positionY, volume);
 
   /// Create a copy of AudioFile
   /// with the given fields replaced by the non-null parameter values.
@@ -213,7 +238,8 @@ class _$AudioFileImpl implements _AudioFile {
 
 abstract class _AudioFile implements AudioFile {
   const factory _AudioFile(
-      {required final String path,
+      {required final String id,
+      required final String path,
       required final String name,
       required final int positionX,
       required final int positionY,
@@ -222,6 +248,8 @@ abstract class _AudioFile implements AudioFile {
   factory _AudioFile.fromJson(Map<String, dynamic> json) =
       _$AudioFileImpl.fromJson;
 
+  @override
+  String get id;
   @override
   String get path;
   @override

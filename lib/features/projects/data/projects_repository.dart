@@ -43,13 +43,20 @@ abstract class ProjectsRepository {
   Future<void> addProject(ProjectInfo value);
   Future<void> deleteProject(String id);
   Future<Project> getProject(String projectId);
-  Future<void> setAudioFile(String projectId, AudioFile? audio, int x, int y);
   Stream<Project> streamProject(
     String projectId,
     void Function(void Function()) subscriptionCallback,
   );
   Stream<List<ProjectInfo>> streamProjects();
   Future<void> updateProject(Project value);
+
+  Future<void> moveAudioFile(
+    String projectId,
+    AudioFile audio,
+    int newX,
+    int newY,
+  );
+  Future<void> setAudioFile(String projectId, AudioFile? audio, int x, int y);
 }
 
 class LocalProjectsRepository implements ProjectsRepository {
@@ -98,6 +105,29 @@ class LocalProjectsRepository implements ProjectsRepository {
   Future<Project> getProject(String projectId) async {
     return Project.fromJson(
       _getStorage.read<Map<String, dynamic>>('project_$projectId') ?? {},
+    );
+  }
+
+  @override
+  Future<void> moveAudioFile(
+    String projectId,
+    AudioFile audio,
+    int newX,
+    int newY,
+  ) async {
+    final project = await getProject(projectId);
+
+    final audioFiles = {...project.audioFiles};
+    final oldX = audio.positionX;
+    final oldY = audio.positionY;
+
+    audioFiles.remove('$oldX:$oldY');
+    audioFiles['$newX:$newY'] =
+        audio.copyWith(positionX: newX, positionY: newY);
+
+    await _getStorage.write(
+      'project_$projectId',
+      project.copyWith(audioFiles: audioFiles).toJson(),
     );
   }
 
