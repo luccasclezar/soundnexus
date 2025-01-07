@@ -93,7 +93,7 @@ class _SoundNexusAppState extends State<SoundNexusApp> {
 
     // On macOS the pointer shouldn't change to 'clickable' when hovering
     // buttons. Overriding MouseTracker is the workaround.
-    if (Platform.isMacOS && !kIsWeb) {
+    if (AppPlatform.isDekstop && !kIsWeb) {
       // ignore: invalid_use_of_visible_for_testing_member
       RendererBinding.instance.initMouseTracker(DesktopMouseTracker());
     }
