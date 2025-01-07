@@ -6,17 +6,23 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get_it/get_it.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soundnexus/features/project/presentation/project_page.dart';
+import 'package:soundnexus/features/projects/data/projects_repository.dart';
 import 'package:soundnexus/features/projects/presentation/projects_page.dart';
+import 'package:soundnexus/global/app_platform.dart';
 import 'package:soundnexus/global/desktop_mouse_tracker.dart';
-
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey();
-BuildContext get navigatorContext => navigatorKey.currentContext!;
+import 'package:soundnexus/global/globals.dart';
 
 Future<void> main() async {
   await GetStorage.init();
+
+  GetIt.I.registerSingleton<ProjectsRepository>(
+    LocalProjectsRepository(),
+    dispose: (param) => param.dispose(),
+  );
 
   runApp(const ProviderScope(child: SoundNexusApp()));
 }
@@ -68,7 +74,7 @@ class _SoundNexusAppState extends State<SoundNexusApp> {
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => const ProjectsPage(),
+        builder: (context, state) => ProjectsPage(),
         routes: [
           GoRoute(
             path: 'project/:projectId',

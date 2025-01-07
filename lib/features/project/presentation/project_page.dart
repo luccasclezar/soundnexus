@@ -9,9 +9,9 @@ import 'package:soundnexus/features/project/presentation/project_page_controller
 import 'package:soundnexus/features/projects/data/projects_repository.dart';
 import 'package:soundnexus/features/projects/domain/audio_file.dart';
 import 'package:soundnexus/features/projects/domain/project.dart';
+import 'package:soundnexus/global/globals.dart';
 import 'package:soundnexus/global/widgets/app_draggable.dart';
 import 'package:soundnexus/global/widgets/spin_box.dart';
-import 'package:soundnexus/main.dart';
 import 'package:uuid/v4.dart';
 
 const _maxTileSize = 180.0;
