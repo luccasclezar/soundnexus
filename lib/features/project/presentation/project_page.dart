@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:desktop_drop/desktop_drop.dart';
@@ -274,7 +275,7 @@ class _SoundBoardTileState
     }
 
     // Take the file name without extension as the AudioFile's initial name.
-    final name = file.path.split('/').last.split('.').first;
+    final name = file.path.split(Platform.pathSeparator).last.split('.').first;
 
     widget.vm.setAudioFile(
       AudioFile(
