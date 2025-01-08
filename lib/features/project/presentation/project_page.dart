@@ -314,6 +314,7 @@ class _SoundBoardTileState
               onWillAcceptWithDetails: (details) => details.data != audioFile,
               builder: (context, candidateData, rejectedData) {
                 return AppDraggable(
+                  centerDesktopFeedback: true,
                   data: audioFile,
                   enabled: audioFile != null,
                   feedback: Container(
