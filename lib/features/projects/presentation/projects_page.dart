@@ -5,30 +5,20 @@ import 'package:soundnexus/features/projects/domain/project_info.dart';
 import 'package:soundnexus/features/projects/presentation/projects_page_view_model.dart';
 import 'package:soundnexus/global/app_dialogs.dart';
 import 'package:soundnexus/global/globals.dart';
+import 'package:soundnexus/global/widgets/vm_state.dart';
 
 class ProjectsPage extends StatefulWidget {
   /// A page that shows all user's projects.
-  ///
-  /// If [viewModel] is not provided as parameter, one is created locally.
-  ProjectsPage({ProjectsPageViewModel? viewModel, super.key}) {
-    shouldDisposeViewModel = viewModel == null;
-    this.viewModel =
-        viewModel ?? ProjectsPageViewModel(getIt<ProjectsRepository>());
-  }
-
-  /// The [viewModel] should only be disposed if it was created by the
-  /// constructor and not provided as parameter.
-  late final bool shouldDisposeViewModel;
-
-  /// The page's view model.
-  late final ProjectsPageViewModel viewModel;
+  const ProjectsPage({super.key});
 
   @override
   State<ProjectsPage> createState() => _ProjectsPageState();
 }
 
-class _ProjectsPageState extends State<ProjectsPage> {
-  ProjectsPageViewModel get vm => widget.viewModel;
+class _ProjectsPageState extends VMState<ProjectsPage, ProjectsPageViewModel> {
+  @override
+  ProjectsPageViewModel createViewModel() =>
+      ProjectsPageViewModel(getIt<ProjectsRepository>());
 
   Future<void> _onDeletePressed(ProjectInfo project) async {
     final result = await showAlert(
@@ -83,42 +73,41 @@ class _ProjectsPageState extends State<ProjectsPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget builder(BuildContext context, ProjectsPageViewModel vm) {
+    final Widget body;
+
+    if (vm.isLoadingProjects) {
+      body = const Center(child: CircularProgressIndicator());
+    } else if (vm.error.isNotEmpty) {
+      body = Center(child: Text(vm.error));
+    } else {
+      final projects = vm.projects;
+
+      body = ListView.builder(
+        itemCount: projects.length,
+        itemBuilder: (context, index) {
+          final project = projects[index];
+          return ListTile(
+            title: Text(project.name),
+            trailing: PopupMenuButton(
+              itemBuilder: (context) => [
+                PopupMenuItem<void>(
+                  onTap: () => _onDeletePressed(project),
+                  child: const Text('Delete'),
+                ),
+              ],
+            ),
+            onTap: () => context.go('/project/${project.id}'),
+          );
+        },
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('SoundNexus'),
       ),
-      body: ListenableBuilder(
-        listenable: vm,
-        builder: (context, child) {
-          if (vm.isLoadingProjects) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (vm.error.isNotEmpty) {
-            return Center(child: Text(vm.error));
-          } else {
-            final projects = vm.projects;
-
-            return ListView.builder(
-              itemCount: projects.length,
-              itemBuilder: (context, index) {
-                final project = projects[index];
-                return ListTile(
-                  title: Text(project.name),
-                  trailing: PopupMenuButton(
-                    itemBuilder: (context) => [
-                      PopupMenuItem<void>(
-                        onTap: () => _onDeletePressed(project),
-                        child: const Text('Delete'),
-                      ),
-                    ],
-                  ),
-                  onTap: () => context.go('/project/${project.id}'),
-                );
-              },
-            );
-          }
-        },
-      ),
+      body: body,
       floatingActionButton: FloatingActionButton(
         onPressed: _onFabPressed,
         child: const Icon(Icons.add_rounded),

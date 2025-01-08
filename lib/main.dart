@@ -74,7 +74,7 @@ class _SoundNexusAppState extends State<SoundNexusApp> {
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => ProjectsPage(),
+        builder: (context, state) => const ProjectsPage(),
         routes: [
           GoRoute(
             path: 'project/:projectId',
