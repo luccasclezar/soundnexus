@@ -1,41 +1,9 @@
 import 'dart:async';
 
 import 'package:get_storage/get_storage.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:soundnexus/features/projects/domain/audio_file.dart';
 import 'package:soundnexus/features/projects/domain/project.dart';
 import 'package:soundnexus/features/projects/domain/project_info.dart';
-
-part 'projects_repository.g.dart';
-
-@riverpod
-Stream<List<ProjectInfo>> projects(ProjectsRef ref) {
-  return ref.watch(projectsRepositoryProvider).streamProjects();
-}
-
-@riverpod
-Stream<Project> project(ProjectRef ref, String projectId) {
-  return ref.watch(projectsRepositoryProvider).streamProject(
-        projectId,
-        (sub) => ref.onDispose(sub),
-      );
-}
-
-@riverpod
-AudioFile? audioFile(AudioFileRef ref, String projectId, int x, int y) {
-  final project = ref.watch(projectProvider(projectId));
-
-  if (project.isLoading || project.hasError) {
-    return null;
-  }
-
-  return project.value!.audioFiles['$x:$y'];
-}
-
-@riverpod
-ProjectsRepository projectsRepository(ProjectsRepositoryRef ref) {
-  return LocalProjectsRepository();
-}
 
 abstract class ProjectsRepository {
   void dispose();
@@ -43,6 +11,7 @@ abstract class ProjectsRepository {
   Future<void> addProject(ProjectInfo value);
   Future<void> deleteProject(String id);
   Future<Project> getProject(String projectId);
+  Stream<AudioFile?> streamAudioFile(String projectId, int x, int y);
   Stream<Project> streamProject(
     String projectId,
     void Function(void Function()) subscriptionCallback,
@@ -175,6 +144,11 @@ class LocalProjectsRepository implements ProjectsRepository {
     );
 
     return controller.stream;
+  }
+
+  @override
+  Stream<AudioFile?> streamAudioFile(String projectId, int x, int y) {
+    return streamProject(projectId, (s) {}).map((e) => e.audioFiles['$x:$y']);
   }
 
   @override

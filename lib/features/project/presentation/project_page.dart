@@ -2,30 +2,38 @@ import 'dart:ui';
 
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:soundnexus/features/project/presentation/project_page_controller.dart';
+import 'package:soundnexus/features/project/presentation/project_page_view_model.dart';
 import 'package:soundnexus/features/projects/data/projects_repository.dart';
 import 'package:soundnexus/features/projects/domain/audio_file.dart';
 import 'package:soundnexus/features/projects/domain/project.dart';
 import 'package:soundnexus/global/globals.dart';
 import 'package:soundnexus/global/widgets/app_draggable.dart';
+import 'package:soundnexus/global/widgets/listenable_selector.dart';
 import 'package:soundnexus/global/widgets/spin_box.dart';
+import 'package:soundnexus/global/widgets/vm_state.dart';
 import 'package:uuid/v4.dart';
 
 const _maxTileSize = 180.0;
 final _tileBorderRadius = BorderRadius.circular(16);
 
-class ProjectPage extends ConsumerWidget {
+class ProjectPage extends StatefulWidget {
   const ProjectPage({required this.projectId, super.key});
 
   final String projectId;
 
-  Future<void> _onSettingsPressed(BuildContext context, WidgetRef ref) async {
-    final controller =
-        ref.read(projectPageControllerProvider(projectId).notifier);
-    final project = ref.read(projectProvider(projectId)).value!;
+  @override
+  State<ProjectPage> createState() => _ProjectPageState();
+}
+
+class _ProjectPageState extends VMState<ProjectPage, ProjectPageViewModel> {
+  @override
+  ProjectPageViewModel createViewModel() =>
+      ProjectPageViewModel(getIt<ProjectsRepository>(), widget.projectId);
+
+  Future<void> _onSettingsPressed(BuildContext context) async {
+    final project = vm.project;
 
     final newProject = await showDialog<Project>(
       context: context,
@@ -73,73 +81,64 @@ class ProjectPage extends ConsumerWidget {
     );
 
     if (newProject != null) {
-      await controller.updateProject(newProject);
+      await vm.updateProject(newProject);
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final projectAsync = ref.watch(projectProvider(projectId));
+  Widget builder(BuildContext context, ProjectPageViewModel vm) {
+    final Widget body;
+
+    if (vm.isLoading) {
+      body = const Center(child: CircularProgressIndicator());
+    } else if (vm.error.isNotEmpty) {
+      body = Center(child: Text('Error: ${vm.error}'));
+    } else {
+      body = Column(
+        children: [
+          ControlBar(vm),
+          Expanded(child: _SoundBoard(vm)),
+        ],
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
-        actions: projectAsync.when(
-          data: (data) => [
+        actions: [
+          if (vm.isReady)
             IconButton(
-              onPressed: () => _onSettingsPressed(context, ref),
+              onPressed: () => _onSettingsPressed(context),
               icon: const Icon(Icons.settings_rounded),
             ),
-          ],
-          error: (error, stackTrace) => null,
-          loading: () => null,
-        ),
+        ],
         forceMaterialTransparency: true,
-        title: projectAsync.when(
-          data: (data) => Text(data.name),
-          error: (error, stackTrace) => const SizedBox.shrink(),
-          loading: SizedBox.shrink,
-        ),
+        title: vm.isReady ? Text(vm.project.name) : null,
       ),
-      body: projectAsync.when(
-        data: (data) => Column(
-          children: [
-            ControlBar(projectId),
-            Expanded(child: _SoundBoard(projectId)),
-          ],
-        ),
-        error: (error, stackTrace) => const Center(
-          child: Text('There was an error loading the project'),
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-      ),
+      body: body,
     );
   }
 }
 
-class ControlBar extends ConsumerWidget {
-  const ControlBar(this.projectId, {super.key});
+class ControlBar extends StatelessWidget {
+  const ControlBar(this.vm, {super.key});
 
-  final String projectId;
+  final ProjectPageViewModel vm;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final model = ref.watch(projectPageControllerProvider(projectId));
-    final controller =
-        ref.watch(projectPageControllerProvider(projectId).notifier);
-
+  Widget build(BuildContext context) {
     return Row(
       children: [
         IconButton(
-          onPressed: model.isPlaying ? controller.stop : null,
+          onPressed: vm.isPlaying ? vm.stop : null,
           icon: const Icon(Icons.pause_rounded),
         ),
         const Spacer(),
-        Text(model.volume.toString()),
+        Text(vm.volume.toString()),
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 200),
           child: Slider(
-            value: model.volume,
-            onChanged: controller.setVolume,
+            value: vm.volume,
+            onChanged: vm.setVolume,
           ),
         ),
       ],
@@ -147,16 +146,16 @@ class ControlBar extends ConsumerWidget {
   }
 }
 
-class _SoundBoard extends ConsumerStatefulWidget {
-  const _SoundBoard(this.projectId);
+class _SoundBoard extends StatefulWidget {
+  const _SoundBoard(this.vm);
 
-  final String projectId;
+  final ProjectPageViewModel vm;
 
   @override
-  ConsumerState<ConsumerStatefulWidget> createState() => _SoundBoardState();
+  State<_SoundBoard> createState() => _SoundBoardState();
 }
 
-class _SoundBoardState extends ConsumerState<_SoundBoard> {
+class _SoundBoardState extends State<_SoundBoard> {
   final ScrollController scrollController = ScrollController();
 
   @override
@@ -167,9 +166,9 @@ class _SoundBoardState extends ConsumerState<_SoundBoard> {
 
   @override
   Widget build(BuildContext context) {
-    final projectId = widget.projectId;
+    final vm = widget.vm;
 
-    final project = ref.watch(projectProvider(projectId)).value!;
+    final project = vm.project;
 
     return Scrollbar(
       controller: scrollController,
@@ -189,7 +188,7 @@ class _SoundBoardState extends ConsumerState<_SoundBoard> {
               final x = index % project.columns;
               final y = (index / project.columns).floor();
 
-              return _SoundBoardTile(projectId, x, y);
+              return _SoundBoardTile(vm, x, y);
             },
           ),
         ),
@@ -198,23 +197,27 @@ class _SoundBoardState extends ConsumerState<_SoundBoard> {
   }
 }
 
-class _SoundBoardTile extends ConsumerStatefulWidget {
-  const _SoundBoardTile(this.projectId, this.x, this.y);
+class _SoundBoardTile extends StatefulWidget {
+  const _SoundBoardTile(this.vm, this.x, this.y);
 
-  final String projectId;
+  final ProjectPageViewModel vm;
   final int x;
   final int y;
 
   @override
-  ConsumerState<ConsumerStatefulWidget> createState() => _SoundBoardTileState();
+  State<_SoundBoardTile> createState() => _SoundBoardTileState();
 }
 
-class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
+class _SoundBoardTileState
+    extends SelectorState<_SoundBoardTile, ProjectPageViewModel, AudioFile?> {
+  @override
+  ValueListenableView<ProjectPageViewModel, AudioFile?> get listenable =>
+      widget.vm.select((e) => e.getAudioFile(widget.x, widget.y));
+
   bool isDropping = false;
 
   Future<void> _onAcceptDrag(
     BuildContext context,
-    ProjectPageController controller,
     DragTargetDetails<AudioFile> details,
     AudioFile? audioFile,
   ) async {
@@ -249,13 +252,10 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
     final x = widget.x;
     final y = widget.y;
 
-    await controller.moveAudioFile(draggedAudioFile, x, y);
+    await widget.vm.moveAudioFile(draggedAudioFile, x, y);
   }
 
-  void _onNativeDragDone(
-    DropDoneDetails details,
-    ProjectPageController controller,
-  ) {
+  void _onNativeDragDone(DropDoneDetails details) {
     setState(() => isDropping = false);
 
     if (details.files.length != 1) {
@@ -276,7 +276,7 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
     // Take the file name without extension as the AudioFile's initial name.
     final name = file.path.split('/').last.split('.').first;
 
-    controller.setAudioFile(
+    widget.vm.setAudioFile(
       AudioFile(
         id: const UuidV4().generate(),
         path: file.path,
@@ -291,16 +291,13 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget builder(BuildContext context, AudioFile? audioFile) {
     final theme = Theme.of(context);
 
     final x = widget.x;
     final y = widget.y;
 
-    final controller =
-        ref.watch(projectPageControllerProvider(widget.projectId).notifier);
-
-    final audioFile = ref.watch(audioFileProvider(widget.projectId, x, y));
+    final vm = widget.vm;
 
     return Padding(
       padding: const EdgeInsets.all(8),
@@ -309,10 +306,10 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
           return DropTarget(
             onDragEntered: (details) => setState(() => isDropping = true),
             onDragExited: (details) => setState(() => isDropping = false),
-            onDragDone: (details) => _onNativeDragDone(details, controller),
+            onDragDone: _onNativeDragDone,
             child: DragTarget<AudioFile>(
               onAcceptWithDetails: (details) =>
-                  _onAcceptDrag(context, controller, details, audioFile),
+                  _onAcceptDrag(context, details, audioFile),
               onWillAcceptWithDetails: (details) => details.data != audioFile,
               builder: (context, candidateData, rejectedData) {
                 return AppDraggable(
@@ -331,7 +328,7 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
                       child: _SoundBoardTileContent(
                         audioFile: audioFile,
                         isDroppingAudio: isDropping || candidateData.isNotEmpty,
-                        projectId: widget.projectId,
+                        vm: vm,
                         x: x,
                         y: y,
                       ),
@@ -351,7 +348,7 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
                     child: _SoundBoardTileContent(
                       audioFile: audioFile,
                       isDroppingAudio: isDropping || candidateData.isNotEmpty,
-                      projectId: widget.projectId,
+                      vm: vm,
                       x: x,
                       y: y,
                     ),
@@ -366,34 +363,31 @@ class _SoundBoardTileState extends ConsumerState<_SoundBoardTile> {
   }
 }
 
-class _SoundBoardTileContent extends ConsumerWidget {
+class _SoundBoardTileContent extends StatelessWidget {
   const _SoundBoardTileContent({
     required this.audioFile,
     required this.isDroppingAudio,
-    required this.projectId,
+    required this.vm,
     required this.x,
     required this.y,
   });
 
   final AudioFile? audioFile;
   final bool isDroppingAudio;
-  final String projectId;
+  final ProjectPageViewModel vm;
   final int x;
   final int y;
 
-  Future<void> _onDelete(WidgetRef ref) async {
-    await ref
-        .read(projectPageControllerProvider(projectId).notifier)
-        .setAudioFile(null, x, y);
+  Future<void> _onDelete() async {
+    await vm.setAudioFile(null, x, y);
   }
 
-  Future<void> _onTap(ProjectPageController controller) async {
-    controller.toggleAudio(x, y);
+  Future<void> _onTap() async {
+    vm.toggleAudio(x, y);
   }
 
   Future<void> _onSecondaryTap(
     BuildContext context,
-    WidgetRef ref,
     TapUpDetails details,
   ) async {
     final dx = details.globalPosition.dx;
@@ -410,19 +404,16 @@ class _SoundBoardTileContent extends ConsumerWidget {
       position: position,
       items: [
         PopupMenuItem<void>(
+          onTap: _onDelete,
           child: const Text('Delete'),
-          onTap: () => _onDelete(ref),
         ),
       ],
     );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    final controller =
-        ref.watch(projectPageControllerProvider(projectId).notifier);
 
     return Material(
       clipBehavior: Clip.hardEdge,
@@ -444,10 +435,10 @@ class _SoundBoardTileContent extends ConsumerWidget {
             )
           : (audioFile != null
               ? InkWell(
-                  onTap: audioFile == null ? null : () => _onTap(controller),
+                  onTap: audioFile == null ? null : _onTap,
                   onSecondaryTapUp: audioFile == null
                       ? null
-                      : (d) => _onSecondaryTap(context, ref, d),
+                      : (d) => _onSecondaryTap(context, d),
                   child: Builder(
                     builder: (context) {
                       final audioFile = this.audioFile;
@@ -468,7 +459,7 @@ class _SoundBoardTileContent extends ConsumerWidget {
                             ),
                             Slider(
                               value: audioFile.volume,
-                              onChanged: (value) => controller.setAudioFile(
+                              onChanged: (value) => vm.setAudioFile(
                                 audioFile.copyWith(volume: value),
                                 x,
                                 y,

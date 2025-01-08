@@ -40,6 +40,37 @@ class _ListenableSelectorState<Controller extends Listenable, Value>
   }
 }
 
+abstract class SelectorStatelessWidget<Controller extends Listenable, Value>
+    extends StatelessWidget {
+  const SelectorStatelessWidget({super.key});
+
+  ValueListenableView<Controller, Value> get listenable;
+  Widget Function(BuildContext context, Value value) get builder;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableSelector(
+      listenable: listenable,
+      builder: (context, value, child) => builder(context, value),
+    );
+  }
+}
+
+abstract class SelectorState<T extends StatefulWidget,
+    Controller extends Listenable, Value> extends State<T> {
+  ValueListenableView<Controller, Value> get listenable;
+
+  Widget builder(BuildContext context, Value value);
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableSelector(
+      listenable: listenable,
+      builder: (context, value, child) => builder(context, value),
+    );
+  }
+}
+
 extension ListenableSelectorExtension<Controller extends Listenable>
     on Controller {
   /// Selects a specific value from the [Listenable] using [selector] for

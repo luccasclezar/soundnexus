@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:go_router/go_router.dart';
@@ -24,7 +23,7 @@ Future<void> main() async {
     dispose: (param) => param.dispose(),
   );
 
-  runApp(const ProviderScope(child: SoundNexusApp()));
+  runApp(const SoundNexusApp());
 }
 
 class SoundNexusApp extends StatefulWidget {
