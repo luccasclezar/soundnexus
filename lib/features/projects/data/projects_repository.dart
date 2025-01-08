@@ -11,11 +11,7 @@ abstract class ProjectsRepository {
   Future<void> addProject(ProjectInfo value);
   Future<void> deleteProject(String id);
   Future<Project> getProject(String projectId);
-  Stream<AudioFile?> streamAudioFile(String projectId, int x, int y);
-  Stream<Project> streamProject(
-    String projectId,
-    void Function(void Function()) subscriptionCallback,
-  );
+  Stream<Project> streamProject(String projectId);
   Stream<List<ProjectInfo>> streamProjects();
   Future<void> updateProject(Project value);
 
@@ -147,26 +143,18 @@ class LocalProjectsRepository implements ProjectsRepository {
   }
 
   @override
-  Stream<AudioFile?> streamAudioFile(String projectId, int x, int y) {
-    return streamProject(projectId, (s) {}).map((e) => e.audioFiles['$x:$y']);
-  }
-
-  @override
-  Stream<Project> streamProject(
-    String projectId,
-    void Function(void Function()) subscriptionCallback,
-  ) {
+  Stream<Project> streamProject(String projectId) {
     final controller = StreamController<Project>();
 
     // Send the subscription as a callback so that the provider can dispose it.
-    subscriptionCallback(
-      _getStorage.listenKey(
-        'project_$projectId',
-        (value) => controller.add(
-          Project.fromJson(value as Map<String, dynamic>? ?? {}),
-        ),
+    final getStorageListenSub = _getStorage.listenKey(
+      'project_$projectId',
+      (value) => controller.add(
+        Project.fromJson(value as Map<String, dynamic>? ?? {}),
       ),
     );
+
+    controller.onCancel = getStorageListenSub;
 
     controller.add(
       Project.fromJson(

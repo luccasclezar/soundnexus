@@ -40,8 +40,7 @@ class ProjectPageViewModel extends ChangeNotifier {
   }
 
   void init() {
-    _projectStreamSub =
-        _projectsRepository.streamProject(projectId, (e) {}).listen(
+    _projectStreamSub = _projectsRepository.streamProject(projectId).listen(
       (e) {
         _project = e;
         isLoading = false;
