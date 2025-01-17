@@ -31,6 +31,5 @@ Future<bool> showAlert({
     },
   );
 
-  // ignore: use_if_null_to_convert_nulls_to_bools
-  return result == true;
+  return result ?? false;
 }
