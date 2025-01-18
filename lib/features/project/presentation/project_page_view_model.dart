@@ -160,6 +160,14 @@ class ProjectPageViewModel extends ChangeNotifier {
     } else {
       player.resume();
     }
+
+    if (_players.values.any((e) => e.state == PlayerState.playing)) {
+      isPlaying = true;
+    } else {
+      isPlaying = false;
+    }
+
+    notifyListeners();
   }
 
   Future<void> updateProject(Project value) {
