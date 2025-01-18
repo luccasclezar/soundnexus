@@ -16,7 +16,7 @@ import 'package:soundnexus/global/widgets/spin_box.dart';
 import 'package:soundnexus/global/widgets/vm_state.dart';
 import 'package:uuid/v4.dart';
 
-const _maxTileSize = 180.0;
+const _maxTileSize = 160.0;
 final _tileBorderRadius = BorderRadius.circular(16);
 
 class ProjectPage extends StatefulWidget {
@@ -157,11 +157,13 @@ class _SoundBoard extends StatefulWidget {
 }
 
 class _SoundBoardState extends State<_SoundBoard> {
-  final ScrollController scrollController = ScrollController();
+  final ScrollController vScrollController = ScrollController();
+  final ScrollController hScrollController = ScrollController();
 
   @override
   void dispose() {
-    scrollController.dispose();
+    vScrollController.dispose();
+    hScrollController.dispose();
     super.dispose();
   }
 
@@ -172,25 +174,30 @@ class _SoundBoardState extends State<_SoundBoard> {
     final project = vm.project;
 
     return Scrollbar(
-      controller: scrollController,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: project.rows * _maxTileSize,
-            maxWidth: project.columns * _maxTileSize,
-          ),
-          child: GridView.builder(
-            controller: scrollController,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: project.columns,
+      controller: vScrollController,
+      child: Scrollbar(
+        controller: hScrollController,
+        notificationPredicate: (notif) => notif.depth == 1,
+        child: Center(
+          child: SingleChildScrollView(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 16,
+                children: [
+                  for (int row = 0; row < project.rows; row++)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      spacing: 16,
+                      children: [
+                        for (var column = 0; column < project.columns; column++)
+                          _SoundBoardTile(vm, column, row),
+                      ],
+                    ),
+                ],
+              ),
             ),
-            itemCount: project.columns * project.rows,
-            itemBuilder: (context, index) {
-              final x = index % project.columns;
-              final y = (index / project.columns).floor();
-
-              return _SoundBoardTile(vm, x, y);
-            },
           ),
         ),
       ),
@@ -300,8 +307,9 @@ class _SoundBoardTileState
 
     final vm = widget.vm;
 
-    return Padding(
-      padding: const EdgeInsets.all(8),
+    return SizedBox(
+      height: _maxTileSize,
+      width: _maxTileSize,
       child: LayoutBuilder(
         builder: (context, constraints) {
           return DropTarget(
@@ -323,7 +331,7 @@ class _SoundBoardTileState
                     clipBehavior: Clip.hardEdge,
                     decoration: BoxDecoration(
                       borderRadius: _tileBorderRadius,
-                      color: Colors.black.withOpacity(.6),
+                      color: Colors.black.withValues(alpha: .6),
                     ),
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
