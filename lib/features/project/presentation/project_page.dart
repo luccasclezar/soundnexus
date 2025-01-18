@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soundnexus/features/project/presentation/project_page_view_model.dart';
+import 'package:soundnexus/features/project/presentation/properties_drawer.dart';
 import 'package:soundnexus/features/projects/data/projects_repository.dart';
 import 'package:soundnexus/features/projects/domain/audio_file.dart';
 import 'package:soundnexus/features/projects/domain/project.dart';
@@ -95,10 +96,17 @@ class _ProjectPageState extends VMState<ProjectPage, ProjectPageViewModel> {
     } else if (vm.error.isNotEmpty) {
       body = Center(child: Text('Error: ${vm.error}'));
     } else {
-      body = Column(
+      body = Row(
         children: [
-          ControlBar(vm),
-          Expanded(child: _SoundBoard(vm)),
+          PropertiesDrawer(vm),
+          Expanded(
+            child: Column(
+              children: [
+                _ControlBar(vm),
+                Expanded(child: _SoundBoard(vm)),
+              ],
+            ),
+          ),
         ],
       );
     }
@@ -120,8 +128,8 @@ class _ProjectPageState extends VMState<ProjectPage, ProjectPageViewModel> {
   }
 }
 
-class ControlBar extends StatelessWidget {
-  const ControlBar(this.vm, {super.key});
+class _ControlBar extends StatelessWidget {
+  const _ControlBar(this.vm);
 
   final ProjectPageViewModel vm;
 
@@ -129,12 +137,44 @@ class ControlBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        IconButton(
-          onPressed: vm.isPlaying ? vm.stop : null,
-          icon: const Icon(Icons.pause_rounded),
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: vm.isEditing
+              ? IconButton.filled(
+                  icon: const Icon(Icons.edit_rounded),
+                  onPressed: vm.onEditPressed,
+                )
+              : IconButton(
+                  icon: const Icon(Icons.edit_rounded),
+                  onPressed: vm.onEditPressed,
+                ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: vm.isEditingShortcuts
+              ? IconButton.filled(
+                  icon: const Icon(Icons.keyboard_rounded),
+                  onPressed: vm.onShortcutsPressed,
+                )
+              : IconButton(
+                  icon: const Icon(Icons.keyboard_rounded),
+                  onPressed: vm.onShortcutsPressed,
+                ),
         ),
         const Spacer(),
-        Text(vm.volume.toString()),
+        IconButton.filled(
+          onPressed: vm.isPlaying ? vm.stop : null,
+          icon: const Icon(Icons.stop_rounded),
+        ),
+        const SizedBox(
+          height: 24,
+          child: VerticalDivider(
+            width: 24,
+          ),
+        ),
+        Center(
+          child: Text(vm.volume.toStringAsFixed(2)),
+        ),
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 200),
           child: Slider(
@@ -287,8 +327,8 @@ class _SoundBoardTileState
     widget.vm.setAudioFile(
       AudioFile(
         id: const UuidV4().generate(),
-        path: file.path,
         name: name,
+        path: file.path,
         positionX: x,
         positionY: y,
         volume: 1,
@@ -393,7 +433,11 @@ class _SoundBoardTileContent extends StatelessWidget {
   }
 
   Future<void> _onTap() async {
-    vm.toggleAudio(x, y);
+    if (vm.isEditing) {
+      vm.selectAudio(audioFile!);
+    } else if (vm.isNormalView) {
+      vm.toggleAudio(x, y);
+    }
   }
 
   Future<void> _onSecondaryTap(
@@ -425,11 +469,20 @@ class _SoundBoardTileContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final audioFile = this.audioFile;
+
+    final isEditing =
+        audioFile != null && vm.editingAudios.contains(audioFile.positionId);
+
     return Material(
       clipBehavior: Clip.hardEdge,
       shape: RoundedRectangleBorder(
         borderRadius: _tileBorderRadius,
-        side: BorderSide(color: theme.colorScheme.outline),
+        side: BorderSide(
+          color:
+              isEditing ? theme.colorScheme.primary : theme.colorScheme.outline,
+          width: isEditing ? 2 : 1,
+        ),
       ),
       type: MaterialType.transparency,
       child: isDroppingAudio
@@ -445,10 +498,8 @@ class _SoundBoardTileContent extends StatelessWidget {
             )
           : (audioFile != null
               ? InkWell(
-                  onTap: audioFile == null ? null : _onTap,
-                  onSecondaryTapUp: audioFile == null
-                      ? null
-                      : (d) => _onSecondaryTap(context, d),
+                  onTap: _onTap,
+                  onSecondaryTapUp: (d) => _onSecondaryTap(context, d),
                   child: Builder(
                     builder: (context) {
                       final audioFile = this.audioFile;
@@ -469,14 +520,15 @@ class _SoundBoardTileContent extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                                Slider(
-                                  value: audioFile.volume,
-                                  onChanged: (value) => vm.setAudioFile(
-                                    audioFile.copyWith(volume: value),
-                                    x,
-                                    y,
+                                if (vm.isNormalView)
+                                  Slider(
+                                    value: audioFile.volume,
+                                    onChanged: (value) => vm.setAudioFile(
+                                      audioFile.copyWith(volume: value),
+                                      x,
+                                      y,
+                                    ),
                                   ),
-                                ),
                               ],
                             ),
 

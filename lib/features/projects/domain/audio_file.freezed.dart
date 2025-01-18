@@ -21,11 +21,13 @@ AudioFile _$AudioFileFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$AudioFile {
   String get id => throw _privateConstructorUsedError;
-  String get path => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
+  String get path => throw _privateConstructorUsedError;
   int get positionX => throw _privateConstructorUsedError;
   int get positionY => throw _privateConstructorUsedError;
   double get volume => throw _privateConstructorUsedError;
+  bool get loop => throw _privateConstructorUsedError;
+  String get shortcut => throw _privateConstructorUsedError;
 
   /// Serializes this AudioFile to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -44,11 +46,13 @@ abstract class $AudioFileCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
-      String path,
       String name,
+      String path,
       int positionX,
       int positionY,
-      double volume});
+      double volume,
+      bool loop,
+      String shortcut});
 }
 
 /// @nodoc
@@ -67,24 +71,26 @@ class _$AudioFileCopyWithImpl<$Res, $Val extends AudioFile>
   @override
   $Res call({
     Object? id = null,
-    Object? path = null,
     Object? name = null,
+    Object? path = null,
     Object? positionX = null,
     Object? positionY = null,
     Object? volume = null,
+    Object? loop = null,
+    Object? shortcut = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
-      path: null == path
-          ? _value.path
-          : path // ignore: cast_nullable_to_non_nullable
-              as String,
       name: null == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      path: null == path
+          ? _value.path
+          : path // ignore: cast_nullable_to_non_nullable
               as String,
       positionX: null == positionX
           ? _value.positionX
@@ -98,6 +104,14 @@ class _$AudioFileCopyWithImpl<$Res, $Val extends AudioFile>
           ? _value.volume
           : volume // ignore: cast_nullable_to_non_nullable
               as double,
+      loop: null == loop
+          ? _value.loop
+          : loop // ignore: cast_nullable_to_non_nullable
+              as bool,
+      shortcut: null == shortcut
+          ? _value.shortcut
+          : shortcut // ignore: cast_nullable_to_non_nullable
+              as String,
     ) as $Val);
   }
 }
@@ -112,11 +126,13 @@ abstract class _$$AudioFileImplCopyWith<$Res>
   @useResult
   $Res call(
       {String id,
-      String path,
       String name,
+      String path,
       int positionX,
       int positionY,
-      double volume});
+      double volume,
+      bool loop,
+      String shortcut});
 }
 
 /// @nodoc
@@ -133,24 +149,26 @@ class __$$AudioFileImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
-    Object? path = null,
     Object? name = null,
+    Object? path = null,
     Object? positionX = null,
     Object? positionY = null,
     Object? volume = null,
+    Object? loop = null,
+    Object? shortcut = null,
   }) {
     return _then(_$AudioFileImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
-      path: null == path
-          ? _value.path
-          : path // ignore: cast_nullable_to_non_nullable
-              as String,
       name: null == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      path: null == path
+          ? _value.path
+          : path // ignore: cast_nullable_to_non_nullable
               as String,
       positionX: null == positionX
           ? _value.positionX
@@ -164,20 +182,31 @@ class __$$AudioFileImplCopyWithImpl<$Res>
           ? _value.volume
           : volume // ignore: cast_nullable_to_non_nullable
               as double,
+      loop: null == loop
+          ? _value.loop
+          : loop // ignore: cast_nullable_to_non_nullable
+              as bool,
+      shortcut: null == shortcut
+          ? _value.shortcut
+          : shortcut // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$AudioFileImpl implements _AudioFile {
+class _$AudioFileImpl extends _AudioFile {
   const _$AudioFileImpl(
       {required this.id,
-      required this.path,
       required this.name,
+      required this.path,
       required this.positionX,
       required this.positionY,
-      required this.volume});
+      required this.volume,
+      this.loop = false,
+      this.shortcut = ''})
+      : super._();
 
   factory _$AudioFileImpl.fromJson(Map<String, dynamic> json) =>
       _$$AudioFileImplFromJson(json);
@@ -185,19 +214,25 @@ class _$AudioFileImpl implements _AudioFile {
   @override
   final String id;
   @override
-  final String path;
-  @override
   final String name;
+  @override
+  final String path;
   @override
   final int positionX;
   @override
   final int positionY;
   @override
   final double volume;
+  @override
+  @JsonKey()
+  final bool loop;
+  @override
+  @JsonKey()
+  final String shortcut;
 
   @override
   String toString() {
-    return 'AudioFile(id: $id, path: $path, name: $name, positionX: $positionX, positionY: $positionY, volume: $volume)';
+    return 'AudioFile(id: $id, name: $name, path: $path, positionX: $positionX, positionY: $positionY, volume: $volume, loop: $loop, shortcut: $shortcut)';
   }
 
   @override
@@ -206,19 +241,22 @@ class _$AudioFileImpl implements _AudioFile {
         (other.runtimeType == runtimeType &&
             other is _$AudioFileImpl &&
             (identical(other.id, id) || other.id == id) &&
-            (identical(other.path, path) || other.path == path) &&
             (identical(other.name, name) || other.name == name) &&
+            (identical(other.path, path) || other.path == path) &&
             (identical(other.positionX, positionX) ||
                 other.positionX == positionX) &&
             (identical(other.positionY, positionY) ||
                 other.positionY == positionY) &&
-            (identical(other.volume, volume) || other.volume == volume));
+            (identical(other.volume, volume) || other.volume == volume) &&
+            (identical(other.loop, loop) || other.loop == loop) &&
+            (identical(other.shortcut, shortcut) ||
+                other.shortcut == shortcut));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, path, name, positionX, positionY, volume);
+  int get hashCode => Object.hash(runtimeType, id, name, path, positionX,
+      positionY, volume, loop, shortcut);
 
   /// Create a copy of AudioFile
   /// with the given fields replaced by the non-null parameter values.
@@ -236,14 +274,17 @@ class _$AudioFileImpl implements _AudioFile {
   }
 }
 
-abstract class _AudioFile implements AudioFile {
+abstract class _AudioFile extends AudioFile {
   const factory _AudioFile(
       {required final String id,
-      required final String path,
       required final String name,
+      required final String path,
       required final int positionX,
       required final int positionY,
-      required final double volume}) = _$AudioFileImpl;
+      required final double volume,
+      final bool loop,
+      final String shortcut}) = _$AudioFileImpl;
+  const _AudioFile._() : super._();
 
   factory _AudioFile.fromJson(Map<String, dynamic> json) =
       _$AudioFileImpl.fromJson;
@@ -251,15 +292,19 @@ abstract class _AudioFile implements AudioFile {
   @override
   String get id;
   @override
-  String get path;
-  @override
   String get name;
+  @override
+  String get path;
   @override
   int get positionX;
   @override
   int get positionY;
   @override
   double get volume;
+  @override
+  bool get loop;
+  @override
+  String get shortcut;
 
   /// Create a copy of AudioFile
   /// with the given fields replaced by the non-null parameter values.

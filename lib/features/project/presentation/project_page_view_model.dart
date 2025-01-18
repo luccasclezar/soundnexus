@@ -9,12 +9,15 @@ import 'package:soundnexus/global/extensions_on_double.dart';
 
 enum AudioError { unknown, notFound }
 
+enum ProjectView { normal, edit, shortcut }
+
 class ProjectPageViewModel extends ChangeNotifier {
   ProjectPageViewModel(this._projectsRepository, this.projectId) {
     init();
   }
 
   String error = '';
+  ProjectView view = ProjectView.normal;
   bool isLoading = true;
   bool isPlaying = false;
   bool isReady = false;
@@ -25,6 +28,9 @@ class ProjectPageViewModel extends ChangeNotifier {
   /// The map keys are the AudioFile.id.
   Map<String, AudioError> audiosWithError = {};
 
+  /// Audios currently selected as being edited.
+  List<String> editingAudios = [];
+
   final String projectId;
 
   Project? _project;
@@ -34,6 +40,10 @@ class ProjectPageViewModel extends ChangeNotifier {
 
   final Map<String, AudioPlayer> _players = {};
   late final StreamSubscription<Project> _projectStreamSub;
+
+  bool get isEditing => view == ProjectView.edit;
+  bool get isEditingShortcuts => view == ProjectView.shortcut;
+  bool get isNormalView => view == ProjectView.normal;
 
   @override
   void dispose() {
@@ -108,16 +118,46 @@ class ProjectPageViewModel extends ChangeNotifier {
     return project.audioFiles['$x:$y'];
   }
 
+  AudioFile? getAudioFileByString(String positionId) {
+    return project.audioFiles[positionId];
+  }
+
   Future<void> moveAudioFile(AudioFile audio, int newX, int newY) async {
     return _projectsRepository.moveAudioFile(projectId, audio, newX, newY);
   }
 
+  void onEditPressed() {
+    setView(view == ProjectView.edit ? ProjectView.normal : ProjectView.edit);
+  }
+
+  void onShortcutsPressed() {
+    // TODO(luccasclezar): Implement shortcuts editing.
+    setView(
+      view == ProjectView.shortcut ? ProjectView.normal : ProjectView.shortcut,
+    );
+  }
+
+  /// Sets [audio] as being edited.
+  void selectAudio(AudioFile audio) {
+    editingAudios = [audio.positionId];
+    notifyListeners();
+  }
+
   Future<void> setAudioFile(AudioFile? audio, int x, int y) async {
     if (audio != null) {
-      _updatePlayer(audio);
+      await _updatePlayer(audio);
     }
 
     await _projectsRepository.setAudioFile(projectId, audio, x, y);
+  }
+
+  void setView(ProjectView view) {
+    if (view != ProjectView.edit) {
+      editingAudios.clear();
+    }
+
+    this.view = view;
+    notifyListeners();
   }
 
   void setVolume(double value) {
@@ -181,6 +221,20 @@ class ProjectPageViewModel extends ChangeNotifier {
     return _projectsRepository.updateProject(value);
   }
 
+  void updateEditingAudios(AudioFile Function(AudioFile audio) callback) {
+    for (final positionId in editingAudios) {
+      final audio = getAudioFileByString(positionId);
+
+      if (audio == null) {
+        continue;
+      }
+
+      final position = positionId.split(':').map(int.parse).toList();
+
+      setAudioFile(callback(audio), position[0], position[1]);
+    }
+  }
+
   Future<void> _updatePlayer(AudioFile audio) async {
     final id = audio.id;
     var player = _players[id];
@@ -188,6 +242,7 @@ class ProjectPageViewModel extends ChangeNotifier {
     player ??= _players[id] = AudioPlayer();
 
     final targetVolume = audio.volume * volume;
+    final targetReleaseMode = audio.loop ? ReleaseMode.loop : ReleaseMode.stop;
 
     try {
       // Update source
@@ -198,6 +253,11 @@ class ProjectPageViewModel extends ChangeNotifier {
       // Update volume
       if (player.volume != targetVolume) {
         await player.setVolume(targetVolume);
+      }
+
+      // Update volume
+      if (player.releaseMode != targetReleaseMode) {
+        await player.setReleaseMode(targetReleaseMode);
       }
 
       final removedError = audiosWithError.remove(audio.id);
