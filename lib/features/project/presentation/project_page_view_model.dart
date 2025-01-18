@@ -7,6 +7,8 @@ import 'package:soundnexus/features/projects/domain/audio_file.dart';
 import 'package:soundnexus/features/projects/domain/project.dart';
 import 'package:soundnexus/global/extensions_on_double.dart';
 
+enum AudioError { unknown, notFound }
+
 class ProjectPageViewModel extends ChangeNotifier {
   ProjectPageViewModel(this._projectsRepository, this.projectId) {
     init();
@@ -17,6 +19,11 @@ class ProjectPageViewModel extends ChangeNotifier {
   bool isPlaying = false;
   bool isReady = false;
   double volume = 1;
+
+  /// Audios that currently had an error when being loaded.
+  ///
+  /// The map keys are the AudioFile.id.
+  Map<String, AudioError> audiosWithError = {};
 
   final String projectId;
 
@@ -174,7 +181,7 @@ class ProjectPageViewModel extends ChangeNotifier {
     return _projectsRepository.updateProject(value);
   }
 
-  void _updatePlayer(AudioFile audio) {
+  Future<void> _updatePlayer(AudioFile audio) async {
     final id = audio.id;
     var player = _players[id];
 
@@ -182,14 +189,25 @@ class ProjectPageViewModel extends ChangeNotifier {
 
     final targetVolume = audio.volume * volume;
 
-    // Update source
-    if ((player.source as DeviceFileSource?)?.path != audio.path) {
-      player.setSource(DeviceFileSource(audio.path));
-    }
+    try {
+      // Update source
+      if ((player.source as DeviceFileSource?)?.path != audio.path) {
+        await player.setSource(DeviceFileSource(audio.path));
+      }
 
-    // Update volume
-    if (player.volume != targetVolume) {
-      player.setVolume(targetVolume);
+      // Update volume
+      if (player.volume != targetVolume) {
+        await player.setVolume(targetVolume);
+      }
+
+      final removedError = audiosWithError.remove(audio.id);
+      if (removedError != null) {
+        notifyListeners();
+      }
+    } catch (ex) {
+      // TODO(luccasclezar): Better handle errors when loading players.
+      audiosWithError[audio.id] = AudioError.unknown;
+      notifyListeners();
     }
   }
 }

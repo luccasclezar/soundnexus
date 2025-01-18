@@ -454,25 +454,49 @@ class _SoundBoardTileContent extends StatelessWidget {
                       final audioFile = this.audioFile;
 
                       if (audioFile != null) {
-                        return Column(
+                        return Stack(
                           children: [
-                            Expanded(
-                              child: Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Text(
-                                    audioFile.name,
-                                    textAlign: TextAlign.center,
+                            Column(
+                              children: [
+                                Expanded(
+                                  child: Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Text(
+                                        audioFile.name,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                                Slider(
+                                  value: audioFile.volume,
+                                  onChanged: (value) => vm.setAudioFile(
+                                    audioFile.copyWith(volume: value),
+                                    x,
+                                    y,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Slider(
-                              value: audioFile.volume,
-                              onChanged: (value) => vm.setAudioFile(
-                                audioFile.copyWith(volume: value),
-                                x,
-                                y,
+
+                            // Icons row
+                            Positioned(
+                              top: 6,
+                              left: 6,
+                              right: 6,
+                              child: Row(
+                                children: [
+                                  const Spacer(),
+                                  if (vm.audiosWithError[audioFile.id] != null)
+                                    const Tooltip(
+                                      message: 'Audio failed to load',
+                                      child: Icon(
+                                        Icons.warning_rounded,
+                                        size: 20,
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                           ],
