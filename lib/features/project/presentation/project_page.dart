@@ -5,6 +5,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:interactive_slider/interactive_slider.dart';
 import 'package:soundnexus/features/project/presentation/project_page_view_model.dart';
 import 'package:soundnexus/features/project/presentation/properties_drawer.dart';
 import 'package:soundnexus/features/projects/data/projects_repository.dart';
@@ -137,48 +138,63 @@ class _ControlBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: vm.isEditing
-              ? IconButton.filled(
-                  icon: const Icon(Icons.edit_rounded),
-                  onPressed: vm.onEditPressed,
-                )
-              : IconButton(
-                  icon: const Icon(Icons.edit_rounded),
-                  onPressed: vm.onEditPressed,
-                ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: vm.isEditingShortcuts
-              ? IconButton.filled(
-                  icon: const Icon(Icons.keyboard_rounded),
-                  onPressed: vm.onShortcutsPressed,
-                )
-              : IconButton(
-                  icon: const Icon(Icons.keyboard_rounded),
-                  onPressed: vm.onShortcutsPressed,
-                ),
-        ),
+        // Gap
+        const Gap(8),
+
+        // Edit button
+        if (vm.isEditing)
+          IconButton.filled(
+            icon: const Icon(Icons.edit_rounded),
+            onPressed: vm.onEditPressed,
+          )
+        else
+          IconButton(
+            icon: const Icon(Icons.edit_rounded),
+            onPressed: vm.onEditPressed,
+          ),
+
+        // Gap
+        const Gap(8),
+
+        // Shortcuts button
+        if (vm.isEditingShortcuts)
+          IconButton.filled(
+            icon: const Icon(Icons.keyboard_rounded),
+            onPressed: vm.onShortcutsPressed,
+          )
+        else
+          IconButton(
+            icon: const Icon(Icons.keyboard_rounded),
+            onPressed: vm.onShortcutsPressed,
+          ),
+
+        // Spacer
         const Spacer(),
+
+        // Stop button
         IconButton.filled(
           onPressed: vm.isPlaying ? vm.stop : null,
           icon: const Icon(Icons.stop_rounded),
         ),
+
+        const Gap(24),
+
+        // Divider
         const SizedBox(
           height: 24,
-          child: VerticalDivider(
-            width: 24,
-          ),
+          child: VerticalDivider(width: 1),
         ),
-        Center(
-          child: Text(vm.volume.toStringAsFixed(2)),
-        ),
+
+        // Volume Slider
         ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 200),
-          child: Slider(
-            value: vm.volume,
+          constraints: const BoxConstraints(maxWidth: 300),
+          child: InteractiveSlider(
+            centerIcon: Text(vm.volume.toStringAsFixed(2)),
+            startIcon: const Icon(Icons.volume_down_rounded),
+            endIcon: const Icon(Icons.volume_up_rounded),
+            iconPosition: IconPosition.inside,
+            unfocusedHeight: 28,
+            focusedHeight: 36,
             onChanged: vm.setVolume,
           ),
         ),
