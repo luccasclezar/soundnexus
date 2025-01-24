@@ -204,14 +204,10 @@ class ProjectPageViewModel extends ChangeNotifier {
 
     if (player.state == PlayerState.playing) {
       player.pause();
+      isPlaying = false;
     } else {
       player.resume();
-    }
-
-    if (_players.values.any((e) => e.state == PlayerState.playing)) {
       isPlaying = true;
-    } else {
-      isPlaying = false;
     }
 
     notifyListeners();
