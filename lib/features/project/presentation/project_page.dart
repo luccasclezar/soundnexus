@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:context_watch/context_watch.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
@@ -13,7 +14,7 @@ import 'package:soundnexus/features/projects/domain/audio_file.dart';
 import 'package:soundnexus/features/projects/domain/project.dart';
 import 'package:soundnexus/global/globals.dart';
 import 'package:soundnexus/global/widgets/app_draggable.dart';
-import 'package:soundnexus/global/widgets/listenable_selector.dart';
+import 'package:soundnexus/global/widgets/child_builder.dart';
 import 'package:soundnexus/global/widgets/spin_box.dart';
 import 'package:soundnexus/global/widgets/vm_state.dart';
 import 'package:uuid/v4.dart';
@@ -25,9 +26,6 @@ class ProjectPage extends VMWidget<ProjectPageViewModel> {
   const ProjectPage({required this.projectId, super.key});
 
   final String projectId;
-
-  @override
-  bool get isReactive => true;
 
   @override
   ProjectPageViewModel viewModelBuilder() =>
@@ -91,14 +89,18 @@ class ProjectPage extends VMWidget<ProjectPageViewModel> {
 
   @override
   Widget builder(BuildContext context, ProjectPageViewModel vm) {
+    final isLoading = vm.watchOnly(context, (e) => e.isLoading);
+    final isReady = vm.watchOnly(context, (e) => e.isReady);
+    final error = vm.watchOnly(context, (e) => e.error);
+
     final theme = Theme.of(context);
 
     final Widget body;
 
-    if (vm.isLoading) {
+    if (isLoading) {
       body = const Center(child: CircularProgressIndicator());
-    } else if (vm.error.isNotEmpty) {
-      body = Center(child: Text('Error: ${vm.error}'));
+    } else if (error.isNotEmpty) {
+      body = Center(child: Text('Error: $error'));
     } else {
       body = Row(
         children: [
@@ -120,14 +122,14 @@ class ProjectPage extends VMWidget<ProjectPageViewModel> {
     return Scaffold(
       appBar: AppBar(
         actions: [
-          if (vm.isReady)
+          if (isReady)
             IconButton(
               onPressed: () => _onSettingsPressed(context, vm),
               icon: const Icon(Icons.settings_rounded),
             ),
         ],
         forceMaterialTransparency: true,
-        title: vm.isReady ? Text(vm.project.name) : null,
+        title: isReady ? Text(vm.project.name) : null,
       ),
       body: body,
     );
@@ -148,40 +150,61 @@ class _ControlBar extends StatelessWidget {
           padding: const EdgeInsets.all(8),
           child: Column(
             children: [
-              // Edit button
-              if (vm.isEditing)
-                IconButton.filled(
-                  icon: const Icon(Icons.edit_rounded),
-                  onPressed: vm.onEditPressed,
-                )
-              else
-                IconButton(
-                  icon: const Icon(Icons.edit_rounded),
-                  onPressed: vm.onEditPressed,
-                ),
+              // Edit button`
+              Builder(
+                builder: (context) {
+                  final isEditing = vm.watchOnly(context, (e) => e.isEditing);
+
+                  if (isEditing) {
+                    return IconButton.filled(
+                      icon: const Icon(Icons.edit_rounded),
+                      onPressed: vm.onEditPressed,
+                    );
+                  } else {
+                    return IconButton(
+                      icon: const Icon(Icons.edit_rounded),
+                      onPressed: vm.onEditPressed,
+                    );
+                  }
+                },
+              ),
 
               // Gap
               const Gap(8),
 
               // Shortcuts button
-              if (vm.isEditingShortcuts)
-                IconButton.filled(
-                  icon: const Icon(Icons.keyboard_rounded),
-                  onPressed: vm.onShortcutsPressed,
-                )
-              else
-                IconButton(
-                  icon: const Icon(Icons.keyboard_rounded),
-                  onPressed: vm.onShortcutsPressed,
-                ),
+              Builder(
+                builder: (context) {
+                  final isEditingShortcuts =
+                      vm.watchOnly(context, (e) => e.isEditingShortcuts);
+
+                  if (isEditingShortcuts) {
+                    return IconButton.filled(
+                      icon: const Icon(Icons.keyboard_rounded),
+                      onPressed: vm.onShortcutsPressed,
+                    );
+                  } else {
+                    return IconButton(
+                      icon: const Icon(Icons.keyboard_rounded),
+                      onPressed: vm.onShortcutsPressed,
+                    );
+                  }
+                },
+              ),
 
               // Spacer
               const Spacer(),
 
               // Stop button
-              IconButton.filled(
-                onPressed: vm.isPlaying ? vm.stop : null,
-                icon: const Icon(Icons.stop_rounded),
+              Builder(
+                builder: (context) {
+                  final isPlaying = vm.watchOnly(context, (e) => e.isPlaying);
+
+                  return IconButton.filled(
+                    onPressed: isPlaying ? vm.stop : null,
+                    icon: const Icon(Icons.stop_rounded),
+                  );
+                },
               ),
 
               const Gap(16),
@@ -191,17 +214,23 @@ class _ControlBar extends StatelessWidget {
                 quarterTurns: 3,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 300),
-                  child: InteractiveSlider(
-                    centerIcon: Text(vm.volume.toStringAsFixed(2)),
-                    startIcon: const Icon(Icons.volume_down_rounded),
-                    endIcon: const Icon(Icons.volume_up_rounded),
-                    iconPosition: IconPosition.inside,
-                    padding: EdgeInsets.zero,
-                    initialProgress: vm.volume,
-                    unfocusedHeight: 28,
-                    unfocusedMargin: EdgeInsets.zero,
-                    focusedHeight: 36,
-                    onChanged: vm.setVolume,
+                  child: Builder(
+                    builder: (context) {
+                      final volume = vm.watchOnly(context, (e) => e.volume);
+
+                      return InteractiveSlider(
+                        centerIcon: Text(volume.toStringAsFixed(2)),
+                        startIcon: const Icon(Icons.volume_down_rounded),
+                        endIcon: const Icon(Icons.volume_up_rounded),
+                        iconPosition: IconPosition.inside,
+                        padding: EdgeInsets.zero,
+                        initialProgress: volume,
+                        unfocusedHeight: 28,
+                        unfocusedMargin: EdgeInsets.zero,
+                        focusedHeight: 36,
+                        onChanged: vm.setVolume,
+                      );
+                    },
                   ),
                 ),
               ),
@@ -213,12 +242,18 @@ class _ControlBar extends StatelessWidget {
         ),
 
         // Properties panel
-        AnimatedAlign(
-          alignment: Alignment.centerLeft,
-          curve: Easing.standard,
-          duration: Durations.medium1,
-          widthFactor: vm.isEditing ? 1 : 0,
-          child: PropertiesDrawer(vm),
+        Builder(
+          builder: (context) {
+            final isEditing = vm.watchOnly(context, (e) => e.isEditing);
+
+            return AnimatedAlign(
+              alignment: Alignment.centerLeft,
+              curve: Easing.standard,
+              duration: Durations.medium1,
+              widthFactor: isEditing ? 1 : 0,
+              child: PropertiesDrawer(vm),
+            );
+          },
         ),
       ],
     );
@@ -249,7 +284,8 @@ class _SoundBoardState extends State<_SoundBoard> {
   Widget build(BuildContext context) {
     final vm = widget.vm;
 
-    final project = vm.project;
+    final columns = vm.watchOnly(context, (e) => e.project.columns);
+    final rows = vm.watchOnly(context, (e) => e.project.rows);
 
     return Scrollbar(
       controller: vScrollController,
@@ -264,12 +300,12 @@ class _SoundBoardState extends State<_SoundBoard> {
                 mainAxisSize: MainAxisSize.min,
                 spacing: 16,
                 children: [
-                  for (int row = 0; row < project.rows; row++)
+                  for (int row = 0; row < rows; row++)
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       spacing: 16,
                       children: [
-                        for (var column = 0; column < project.columns; column++)
+                        for (var column = 0; column < columns; column++)
                           _SoundBoardTile(vm, column, row),
                       ],
                     ),
@@ -294,12 +330,7 @@ class _SoundBoardTile extends StatefulWidget {
   State<_SoundBoardTile> createState() => _SoundBoardTileState();
 }
 
-class _SoundBoardTileState
-    extends SelectorState<_SoundBoardTile, ProjectPageViewModel, AudioFile?> {
-  @override
-  ValueListenableView<ProjectPageViewModel, AudioFile?> get listenable =>
-      widget.vm.select((e) => e.getAudioFile(widget.x, widget.y));
-
+class _SoundBoardTileState extends State<_SoundBoardTile> {
   bool isDropping = false;
 
   Future<void> _onAcceptDrag(
@@ -377,13 +408,16 @@ class _SoundBoardTileState
   }
 
   @override
-  Widget builder(BuildContext context, AudioFile? audioFile) {
+  Widget build(BuildContext context) {
+    final vm = widget.vm;
+
     final theme = Theme.of(context);
 
     final x = widget.x;
     final y = widget.y;
 
-    final vm = widget.vm;
+    final audioFile =
+        vm.watchOnly(context, (e) => e.getAudioFile(widget.x, widget.y));
 
     return SizedBox(
       height: _maxTileSize,
@@ -510,8 +544,11 @@ class _SoundBoardTileContent extends StatelessWidget {
 
     final audioFile = this.audioFile;
 
-    final isEditing =
-        audioFile != null && vm.editingAudios.contains(audioFile.positionId);
+    final isEditing = audioFile != null &&
+        vm.watchOnly(
+          context,
+          (e) => e.editingAudios.contains(audioFile.positionId),
+        );
 
     final Widget child;
 
@@ -527,7 +564,8 @@ class _SoundBoardTileContent extends StatelessWidget {
         ),
       );
     } else if (audioFile != null) {
-      final showLoadWarningIcon = vm.audiosWithError[audioFile.id] != null;
+      final showLoadWarningIcon =
+          vm.watchOnly(context, (e) => e.audiosWithError[audioFile.id] != null);
       final hasIcons = showLoadWarningIcon;
 
       child = Column(
@@ -576,32 +614,39 @@ class _SoundBoardTileContent extends StatelessWidget {
           ),
 
           // Volume slider
-          ClipRect(
-            child: AnimatedAlign(
-              alignment: Alignment.bottomCenter,
-              curve: Easing.standard,
-              duration: Durations.medium1,
-              heightFactor: vm.isNormalView ? 1 : 0,
-              child: InteractiveSlider(
-                centerIcon: Text(
-                  audioFile.volume.toStringAsFixed(2),
+          ChildBuilder(
+            builder: (context, child) {
+              final isNormalView = vm.watchOnly(context, (e) => e.isNormalView);
+
+              return ClipRect(
+                child: AnimatedAlign(
+                  alignment: Alignment.bottomCenter,
+                  curve: Easing.standard,
+                  duration: Durations.medium1,
+                  heightFactor: isNormalView ? 1 : 0,
+                  child: child,
                 ),
-                startIcon: const Icon(Icons.volume_down_rounded),
-                endIcon: const Icon(Icons.volume_up_rounded),
-                iconSize: 16,
-                style: theme.textTheme.bodySmall,
-                focusedHeight: 24,
-                iconPosition: IconPosition.inside,
-                initialProgress: audioFile.volume,
-                padding: EdgeInsets.zero,
-                unfocusedHeight: 24,
-                unfocusedMargin: EdgeInsets.zero,
-                shapeBorder: const Border(),
-                onChanged: (value) => vm.setAudioFile(
-                  audioFile.copyWith(volume: value),
-                  x,
-                  y,
-                ),
+              );
+            },
+            child: InteractiveSlider(
+              centerIcon: Text(
+                audioFile.volume.toStringAsFixed(2),
+              ),
+              startIcon: const Icon(Icons.volume_down_rounded),
+              endIcon: const Icon(Icons.volume_up_rounded),
+              iconSize: 16,
+              style: theme.textTheme.bodySmall,
+              focusedHeight: 24,
+              iconPosition: IconPosition.inside,
+              initialProgress: audioFile.volume,
+              padding: EdgeInsets.zero,
+              unfocusedHeight: 24,
+              unfocusedMargin: EdgeInsets.zero,
+              shapeBorder: const Border(),
+              onChanged: (value) => vm.setAudioFile(
+                audioFile.copyWith(volume: value),
+                x,
+                y,
               ),
             ),
           ),
