@@ -38,6 +38,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.11.0"
+  async_listenable:
+    dependency: transitive
+    description:
+      name: async_listenable
+      sha256: "320e3ad55f1d05f3801229d13e39331d2d4ba7052683b69607124cefd0f8aa6e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.0"
   audioplayers:
     dependency: "direct main"
     description:
@@ -206,6 +214,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.0"
+  context_watch:
+    dependency: "direct main"
+    description:
+      name: context_watch
+      sha256: "5dd37a2e40c3088487d8e85170b52afd110ccf0ee3d35159138a89dfd1a018d3"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.1.2"
+  context_watch_base:
+    dependency: transitive
+    description:
+      name: context_watch_base
+      sha256: "3116155e09eefb270464b3b4fbd609c5b852693899d72d7bebe5e34918c72ba0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.0.2"
   convert:
     dependency: transitive
     description:

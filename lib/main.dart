@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:context_watch/context_watch.dart';
 import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -23,7 +24,7 @@ Future<void> main() async {
     dispose: (param) => param.dispose(),
   );
 
-  runApp(const SoundNexusApp());
+  runApp(ContextWatch.root(child: const SoundNexusApp()));
 }
 
 class SoundNexusApp extends StatefulWidget {
