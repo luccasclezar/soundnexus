@@ -21,21 +21,22 @@ import 'package:uuid/v4.dart';
 const _maxTileSize = 160.0;
 final _tileBorderRadius = BorderRadius.circular(16);
 
-class ProjectPage extends StatefulWidget {
+class ProjectPage extends VMWidget<ProjectPageViewModel> {
   const ProjectPage({required this.projectId, super.key});
 
   final String projectId;
 
   @override
-  State<ProjectPage> createState() => _ProjectPageState();
-}
+  bool get isReactive => true;
 
-class _ProjectPageState extends VMState<ProjectPage, ProjectPageViewModel> {
   @override
-  ProjectPageViewModel createViewModel() =>
-      ProjectPageViewModel(getIt<ProjectsRepository>(), widget.projectId);
+  ProjectPageViewModel viewModelBuilder() =>
+      ProjectPageViewModel(getIt<ProjectsRepository>(), projectId);
 
-  Future<void> _onSettingsPressed(BuildContext context) async {
+  Future<void> _onSettingsPressed(
+    BuildContext context,
+    ProjectPageViewModel vm,
+  ) async {
     final project = vm.project;
 
     final newProject = await showDialog<Project>(
@@ -90,6 +91,8 @@ class _ProjectPageState extends VMState<ProjectPage, ProjectPageViewModel> {
 
   @override
   Widget builder(BuildContext context, ProjectPageViewModel vm) {
+    final theme = Theme.of(context);
+
     final Widget body;
 
     if (vm.isLoading) {
@@ -99,13 +102,15 @@ class _ProjectPageState extends VMState<ProjectPage, ProjectPageViewModel> {
     } else {
       body = Row(
         children: [
-          PropertiesDrawer(vm),
+          _ControlBar(vm),
           Expanded(
-            child: Column(
-              children: [
-                _ControlBar(vm),
-                Expanded(child: _SoundBoard(vm)),
-              ],
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius:
+                    const BorderRadius.only(topLeft: Radius.circular(24)),
+                color: theme.colorScheme.surfaceContainerLowest,
+              ),
+              child: _SoundBoard(vm),
             ),
           ),
         ],
@@ -117,7 +122,7 @@ class _ProjectPageState extends VMState<ProjectPage, ProjectPageViewModel> {
         actions: [
           if (vm.isReady)
             IconButton(
-              onPressed: () => _onSettingsPressed(context),
+              onPressed: () => _onSettingsPressed(context, vm),
               icon: const Icon(Icons.settings_rounded),
             ),
         ],
@@ -138,65 +143,82 @@ class _ControlBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // Gap
-        const Gap(8),
+        // Control bar
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            children: [
+              // Edit button
+              if (vm.isEditing)
+                IconButton.filled(
+                  icon: const Icon(Icons.edit_rounded),
+                  onPressed: vm.onEditPressed,
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.edit_rounded),
+                  onPressed: vm.onEditPressed,
+                ),
 
-        // Edit button
-        if (vm.isEditing)
-          IconButton.filled(
-            icon: const Icon(Icons.edit_rounded),
-            onPressed: vm.onEditPressed,
-          )
-        else
-          IconButton(
-            icon: const Icon(Icons.edit_rounded),
-            onPressed: vm.onEditPressed,
+              // Gap
+              const Gap(8),
+
+              // Shortcuts button
+              if (vm.isEditingShortcuts)
+                IconButton.filled(
+                  icon: const Icon(Icons.keyboard_rounded),
+                  onPressed: vm.onShortcutsPressed,
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.keyboard_rounded),
+                  onPressed: vm.onShortcutsPressed,
+                ),
+
+              // Spacer
+              const Spacer(),
+
+              // Stop button
+              IconButton.filled(
+                onPressed: vm.isPlaying ? vm.stop : null,
+                icon: const Icon(Icons.stop_rounded),
+              ),
+
+              const Gap(16),
+
+              // Volume Slider
+              RotatedBox(
+                quarterTurns: 3,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 300),
+                  child: InteractiveSlider(
+                    centerIcon: Text(vm.volume.toStringAsFixed(2)),
+                    startIcon: const Icon(Icons.volume_down_rounded),
+                    endIcon: const Icon(Icons.volume_up_rounded),
+                    iconPosition: IconPosition.inside,
+                    padding: EdgeInsets.zero,
+                    initialProgress: vm.volume,
+                    unfocusedHeight: 28,
+                    unfocusedMargin: EdgeInsets.zero,
+                    focusedHeight: 36,
+                    onChanged: vm.setVolume,
+                  ),
+                ),
+              ),
+
+              // Gap
+              const Gap(8),
+            ],
           ),
-
-        // Gap
-        const Gap(8),
-
-        // Shortcuts button
-        if (vm.isEditingShortcuts)
-          IconButton.filled(
-            icon: const Icon(Icons.keyboard_rounded),
-            onPressed: vm.onShortcutsPressed,
-          )
-        else
-          IconButton(
-            icon: const Icon(Icons.keyboard_rounded),
-            onPressed: vm.onShortcutsPressed,
-          ),
-
-        // Spacer
-        const Spacer(),
-
-        // Stop button
-        IconButton.filled(
-          onPressed: vm.isPlaying ? vm.stop : null,
-          icon: const Icon(Icons.stop_rounded),
         ),
 
-        const Gap(24),
-
-        // Divider
-        const SizedBox(
-          height: 24,
-          child: VerticalDivider(width: 1),
-        ),
-
-        // Volume Slider
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 300),
-          child: InteractiveSlider(
-            centerIcon: Text(vm.volume.toStringAsFixed(2)),
-            startIcon: const Icon(Icons.volume_down_rounded),
-            endIcon: const Icon(Icons.volume_up_rounded),
-            iconPosition: IconPosition.inside,
-            unfocusedHeight: 28,
-            focusedHeight: 36,
-            onChanged: vm.setVolume,
-          ),
+        // Properties panel
+        AnimatedAlign(
+          alignment: Alignment.centerLeft,
+          curve: Easing.standard,
+          duration: Durations.medium1,
+          widthFactor: vm.isEditing ? 1 : 0,
+          child: PropertiesDrawer(vm),
         ),
       ],
     );
@@ -449,6 +471,7 @@ class _SoundBoardTileContent extends StatelessWidget {
   }
 
   Future<void> _onTap() async {
+    // TODO(luccasclezar): Move this to the ViewModel.
     if (vm.isEditing) {
       vm.selectAudio(audioFile!);
     } else if (vm.isNormalView) {
@@ -490,6 +513,104 @@ class _SoundBoardTileContent extends StatelessWidget {
     final isEditing =
         audioFile != null && vm.editingAudios.contains(audioFile.positionId);
 
+    final Widget child;
+
+    if (isDroppingAudio) {
+      child = const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add_rounded),
+            Gap(8),
+            Text('Add audio here'),
+          ],
+        ),
+      );
+    } else if (audioFile != null) {
+      final showLoadWarningIcon = vm.audiosWithError[audioFile.id] != null;
+      final hasIcons = showLoadWarningIcon;
+
+      child = Column(
+        children: [
+          // Button & content
+          Expanded(
+            child: InkWell(
+              onTap: _onTap,
+              onSecondaryTapUp: (d) => _onSecondaryTap(context, d),
+              child: Column(
+                children: [
+                  // Icons row
+                  if (hasIcons)
+                    Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: Row(
+                        children: [
+                          const Spacer(),
+                          if (showLoadWarningIcon)
+                            const Tooltip(
+                              message: 'Audio failed to load',
+                              child: Icon(
+                                Icons.warning_rounded,
+                                size: 20,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+
+                  // Title
+                  Expanded(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          audioFile.name,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Volume slider
+          ClipRect(
+            child: AnimatedAlign(
+              alignment: Alignment.bottomCenter,
+              curve: Easing.standard,
+              duration: Durations.medium1,
+              heightFactor: vm.isNormalView ? 1 : 0,
+              child: InteractiveSlider(
+                centerIcon: Text(
+                  audioFile.volume.toStringAsFixed(2),
+                ),
+                startIcon: const Icon(Icons.volume_down_rounded),
+                endIcon: const Icon(Icons.volume_up_rounded),
+                iconSize: 16,
+                style: theme.textTheme.bodySmall,
+                focusedHeight: 24,
+                iconPosition: IconPosition.inside,
+                initialProgress: audioFile.volume,
+                padding: EdgeInsets.zero,
+                unfocusedHeight: 24,
+                unfocusedMargin: EdgeInsets.zero,
+                shapeBorder: const Border(),
+                onChanged: (value) => vm.setAudioFile(
+                  audioFile.copyWith(volume: value),
+                  x,
+                  y,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else {
+      child = const SizedBox.shrink();
+    }
+
     return Material(
       clipBehavior: Clip.hardEdge,
       shape: RoundedRectangleBorder(
@@ -501,81 +622,7 @@ class _SoundBoardTileContent extends StatelessWidget {
         ),
       ),
       type: MaterialType.transparency,
-      child: isDroppingAudio
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add_rounded),
-                  Gap(8),
-                  Text('Add audio here'),
-                ],
-              ),
-            )
-          : (audioFile != null
-              ? InkWell(
-                  onTap: _onTap,
-                  onSecondaryTapUp: (d) => _onSecondaryTap(context, d),
-                  child: Builder(
-                    builder: (context) {
-                      final audioFile = this.audioFile;
-
-                      if (audioFile != null) {
-                        return Stack(
-                          children: [
-                            Column(
-                              children: [
-                                Expanded(
-                                  child: Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16),
-                                      child: Text(
-                                        audioFile.name,
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                if (vm.isNormalView)
-                                  Slider(
-                                    value: audioFile.volume,
-                                    onChanged: (value) => vm.setAudioFile(
-                                      audioFile.copyWith(volume: value),
-                                      x,
-                                      y,
-                                    ),
-                                  ),
-                              ],
-                            ),
-
-                            // Icons row
-                            Positioned(
-                              top: 6,
-                              left: 6,
-                              right: 6,
-                              child: Row(
-                                children: [
-                                  const Spacer(),
-                                  if (vm.audiosWithError[audioFile.id] != null)
-                                    const Tooltip(
-                                      message: 'Audio failed to load',
-                                      child: Icon(
-                                        Icons.warning_rounded,
-                                        size: 20,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        );
-                      } else {
-                        return const SizedBox.shrink();
-                      }
-                    },
-                  ),
-                )
-              : null),
+      child: child,
     );
   }
 }

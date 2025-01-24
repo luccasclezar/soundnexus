@@ -1,5 +1,57 @@
 import 'package:flutter/material.dart';
 
+abstract class VMWidget<VM extends ChangeNotifier> extends StatelessWidget {
+  const VMWidget({super.key});
+
+  bool get isReactive => false;
+
+  VM viewModelBuilder();
+
+  Widget builder(BuildContext context, VM vm);
+
+  @override
+  Widget build(BuildContext context) {
+    return _VMStatefulWidget(
+      isReactive: isReactive,
+      viewModelBuilder: viewModelBuilder,
+      builder: builder,
+    );
+  }
+}
+
+class _VMStatefulWidget<VM extends ChangeNotifier> extends StatefulWidget {
+  const _VMStatefulWidget({
+    required this.isReactive,
+    required this.viewModelBuilder,
+    required this.builder,
+  });
+
+  final Widget Function(BuildContext context, VM vm) builder;
+  final VM Function() viewModelBuilder;
+  final bool isReactive;
+
+  @override
+  _VMWidgetState createState() => _VMWidgetState<VM>();
+}
+
+class _VMWidgetState<VM extends ChangeNotifier>
+    extends VMState<_VMStatefulWidget, VM> {
+  @override
+  VM createViewModel() => widget.viewModelBuilder() as VM;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.isReactive) {
+      return ListenableBuilder(
+        listenable: _viewModel,
+        builder: (context, _) => widget.builder(context, _viewModel),
+      );
+    } else {
+      return widget.builder(context, _viewModel);
+    }
+  }
+}
+
 abstract class VMState<T extends StatefulWidget, VM extends ChangeNotifier>
     extends State<T> {
   VM get vm => _viewModel;

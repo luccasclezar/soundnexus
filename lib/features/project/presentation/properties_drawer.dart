@@ -75,83 +75,68 @@ class _PropertiesDrawerState extends State<PropertiesDrawer>
 
     final enabled = vm.editingAudios.isNotEmpty;
 
-    return ClipRect(
-      child: AnimatedAlign(
-        alignment: Alignment.center,
-        curve: Easing.standard,
-        duration: Durations.medium1,
-        widthFactor: vm.isEditing ? 1 : 0,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            border: Border(
-              right: BorderSide(color: theme.colorScheme.outline),
-            ),
-          ),
-          child: SizedBox(
-            width: 360,
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: 16,
-                  children: [
-                    // Title
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'Audio properties',
-                        style: theme.textTheme.titleLarge,
-                      ),
-                    ),
-
-                    // Name
-                    ListTile(
-                      title: const Text('Name'),
-                      subtitle: TextField(
-                        controller: nameController,
-                        enabled: enabled,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                        ),
-                        onEditingComplete: () => vm.updateEditingAudios(
-                          (audio) => audio.copyWith(name: nameController.text),
-                        ),
-                      ),
-                    ),
-
-                    // Path
-                    ListTile(
-                      title: const Text('Path'),
-                      subtitle: TextField(
-                        controller: pathController,
-                        enabled: enabled,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                        ),
-                        onEditingComplete: () => vm.updateEditingAudios(
-                          (audio) => audio.copyWith(path: pathController.text),
-                        ),
-                      ),
-                    ),
-
-                    // Loop
-                    CheckboxListTile(
-                      enabled: enabled,
-                      title: const Text('Loop'),
-                      tristate: loop == null,
-                      value: loop,
-                      onChanged: (value) {
-                        vm.updateEditingAudios(
-                          (audio) => audio.copyWith(loop: value!),
-                        );
-                      },
-                    ),
-                  ],
+    return SizedBox(
+      width: 360,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 8,
+            children: [
+              // Title
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Audio properties',
+                  style: theme.textTheme.titleLarge,
                 ),
               ),
-            ),
+
+              // Name
+              ListTile(
+                title: const Text('Name'),
+                subtitle: TextField(
+                  controller: nameController,
+                  enabled: enabled,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                  ),
+                  onEditingComplete: () => vm.updateEditingAudios(
+                    (audio) => audio.copyWith(name: nameController.text),
+                  ),
+                ),
+              ),
+
+              // Path
+              ListTile(
+                title: const Text('Path'),
+                subtitle: TextField(
+                  controller: pathController,
+                  enabled: enabled,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                  ),
+                  onEditingComplete: () => vm.updateEditingAudios(
+                    (audio) => audio.copyWith(path: pathController.text),
+                  ),
+                ),
+              ),
+
+              // Loop
+              CheckboxListTile(
+                enabled: enabled,
+                title: const Text('Loop'),
+                tristate: loop == null,
+                value: loop,
+                onChanged: (value) {
+                  vm.updateEditingAudios(
+                    (audio) => audio.copyWith(loop: value!),
+                  );
+                },
+              ),
+            ],
           ),
         ),
       ),
