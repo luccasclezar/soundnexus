@@ -296,20 +296,23 @@ class _SoundBoardState extends State<_SoundBoard> {
           child: SingleChildScrollView(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                spacing: 16,
-                children: [
-                  for (int row = 0; row < rows; row++)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      spacing: 16,
-                      children: [
-                        for (var column = 0; column < columns; column++)
-                          _SoundBoardTile(vm, column, row),
-                      ],
-                    ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: 16,
+                  children: [
+                    for (int row = 0; row < rows; row++)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: 16,
+                        children: [
+                          for (var column = 0; column < columns; column++)
+                            _SoundBoardTile(vm, column, row),
+                        ],
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
