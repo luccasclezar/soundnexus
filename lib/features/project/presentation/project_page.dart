@@ -294,7 +294,9 @@ class _SoundBoardState extends State<_SoundBoard> {
         notificationPredicate: (notif) => notif.depth == 1,
         child: Center(
           child: SingleChildScrollView(
+            controller: vScrollController,
             child: SingleChildScrollView(
+              controller: hScrollController,
               scrollDirection: Axis.horizontal,
               child: Padding(
                 padding: const EdgeInsets.all(16),
