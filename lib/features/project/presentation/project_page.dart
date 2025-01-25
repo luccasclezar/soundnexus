@@ -14,7 +14,6 @@ import 'package:soundnexus/features/projects/domain/audio_file.dart';
 import 'package:soundnexus/features/projects/domain/project.dart';
 import 'package:soundnexus/global/globals.dart';
 import 'package:soundnexus/global/widgets/app_draggable.dart';
-import 'package:soundnexus/global/widgets/child_builder.dart';
 import 'package:soundnexus/global/widgets/spin_box.dart';
 import 'package:soundnexus/global/widgets/vm_state.dart';
 import 'package:uuid/v4.dart';
@@ -619,40 +618,25 @@ class _SoundBoardTileContent extends StatelessWidget {
           ),
 
           // Volume slider
-          ChildBuilder(
-            builder: (context, child) {
-              final isNormalView = vm.watchOnly(context, (e) => e.isNormalView);
-
-              return ClipRect(
-                child: AnimatedAlign(
-                  alignment: Alignment.bottomCenter,
-                  curve: Easing.standard,
-                  duration: Durations.medium1,
-                  heightFactor: isNormalView ? 1 : 0,
-                  child: child,
-                ),
-              );
-            },
-            child: InteractiveSlider(
-              centerIcon: Text(
-                audioFile.volume.toStringAsFixed(2),
-              ),
-              startIcon: const Icon(Icons.volume_down_rounded),
-              endIcon: const Icon(Icons.volume_up_rounded),
-              iconSize: 16,
-              style: theme.textTheme.bodySmall,
-              focusedHeight: 24,
-              iconPosition: IconPosition.inside,
-              initialProgress: audioFile.volume,
-              padding: EdgeInsets.zero,
-              unfocusedHeight: 24,
-              unfocusedMargin: EdgeInsets.zero,
-              shapeBorder: const Border(),
-              onChanged: (value) => vm.setAudioFile(
-                audioFile.copyWith(volume: value),
-                x,
-                y,
-              ),
+          InteractiveSlider(
+            centerIcon: Text(
+              audioFile.volume.toStringAsFixed(2),
+            ),
+            startIcon: const Icon(Icons.volume_down_rounded),
+            endIcon: const Icon(Icons.volume_up_rounded),
+            iconSize: 16,
+            style: theme.textTheme.bodySmall,
+            focusedHeight: 24,
+            iconPosition: IconPosition.inside,
+            initialProgress: audioFile.volume,
+            padding: EdgeInsets.zero,
+            unfocusedHeight: 24,
+            unfocusedMargin: EdgeInsets.zero,
+            shapeBorder: const Border(),
+            onChanged: (value) => vm.setAudioFile(
+              audioFile.copyWith(volume: value),
+              x,
+              y,
             ),
           ),
         ],
