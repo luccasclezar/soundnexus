@@ -415,8 +415,6 @@ class _SoundBoardTileState extends State<_SoundBoardTile> {
   Widget build(BuildContext context) {
     final vm = widget.vm;
 
-    final theme = Theme.of(context);
-
     final x = widget.x;
     final y = widget.y;
 
@@ -461,16 +459,9 @@ class _SoundBoardTileState extends State<_SoundBoardTile> {
                     ),
                   ),
                   type: AppDragType.adaptive,
-                  child: Container(
+                  child: SizedBox(
                     height: constraints.maxWidth,
                     width: constraints.maxWidth,
-                    clipBehavior: Clip.hardEdge,
-                    decoration: BoxDecoration(
-                      borderRadius: _tileBorderRadius,
-                      color: candidateData.isNotEmpty
-                          ? theme.colorScheme.surfaceContainer
-                          : null,
-                    ),
                     child: _SoundBoardTileContent(
                       audioFile: audioFile,
                       isDroppingAudio: isDropping || candidateData.isNotEmpty,
@@ -645,18 +636,24 @@ class _SoundBoardTileContent extends StatelessWidget {
       child = const SizedBox.shrink();
     }
 
-    return Material(
-      clipBehavior: Clip.hardEdge,
-      shape: RoundedRectangleBorder(
-        borderRadius: _tileBorderRadius,
-        side: BorderSide(
-          color:
-              isEditing ? theme.colorScheme.primary : theme.colorScheme.outline,
-          width: isEditing ? 2 : 1,
+    return AnimatedScale(
+      curve: Easing.standard,
+      duration: Durations.medium1,
+      scale: isDroppingAudio ? 1.1 : 1,
+      child: Material(
+        clipBehavior: Clip.hardEdge,
+        shape: RoundedRectangleBorder(
+          borderRadius: _tileBorderRadius,
+          side: BorderSide(
+            color: isEditing
+                ? theme.colorScheme.primary
+                : theme.colorScheme.outline,
+            width: isEditing ? 2 : 1,
+          ),
         ),
+        type: MaterialType.transparency,
+        child: child,
       ),
-      type: MaterialType.transparency,
-      child: child,
     );
   }
 }
