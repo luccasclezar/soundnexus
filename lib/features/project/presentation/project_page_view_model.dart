@@ -41,6 +41,12 @@ class ProjectPageViewModel extends ChangeNotifier {
   final Map<String, AudioPlayer> _players = {};
   late final StreamSubscription<Project> _projectStreamSub;
 
+  /// Players state (playing or paused).
+  ///
+  /// As players states are changed asynchronically, this map is used to keep
+  /// track of the players state.
+  final Map<String, bool> _playersState = {};
+
   bool get isEditing => view == ProjectView.edit;
   bool get isEditingShortcuts => view == ProjectView.shortcut;
   bool get isNormalView => view == ProjectView.normal;
@@ -122,6 +128,13 @@ class ProjectPageViewModel extends ChangeNotifier {
     return project.audioFiles[positionId];
   }
 
+  /// Returns true if the specified audio is playing.
+  ///
+  /// [id] is the AudioFile.id.
+  bool isAudioPlaying(String id) {
+    return _playersState[id] ?? false;
+  }
+
   Future<void> moveAudioFile(AudioFile audio, int newX, int newY) async {
     return _projectsRepository.moveAudioFile(projectId, audio, newX, newY);
   }
@@ -184,7 +197,9 @@ class ProjectPageViewModel extends ChangeNotifier {
       player.stop();
     }
 
+    _playersState.clear();
     isPlaying = false;
+
     notifyListeners();
   }
 
@@ -204,9 +219,11 @@ class ProjectPageViewModel extends ChangeNotifier {
 
     if (player.state == PlayerState.playing) {
       player.pause();
+      _playersState[audio.id] = false;
       isPlaying = false;
     } else {
       player.resume();
+      _playersState[audio.id] = true;
       isPlaying = true;
     }
 

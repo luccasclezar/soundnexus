@@ -559,6 +559,8 @@ class _SoundBoardTileContent extends StatelessWidget {
         ),
       );
     } else if (audioFile != null) {
+      final isPlaying =
+          vm.watchOnly(context, (e) => e.isAudioPlaying(audioFile.id));
       final showLoadWarningIcon =
           vm.watchOnly(context, (e) => e.audiosWithError[audioFile.id] != null);
       final hasIcons = showLoadWarningIcon;
@@ -567,44 +569,59 @@ class _SoundBoardTileContent extends StatelessWidget {
         children: [
           // Button & content
           Expanded(
-            child: InkWell(
-              onTap: _onTap,
-              onSecondaryTapUp: (d) => _onSecondaryTap(context, d),
-              child: Column(
-                children: [
-                  // Icons row
-                  if (hasIcons)
-                    Padding(
-                      padding: const EdgeInsets.all(6),
-                      child: Row(
-                        children: [
-                          const Spacer(),
-                          if (showLoadWarningIcon)
-                            const Tooltip(
-                              message: 'Audio failed to load',
-                              child: Icon(
-                                Icons.warning_rounded,
-                                size: 20,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-
-                  // Title
-                  Expanded(
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          audioFile.name,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // BG Icon
+                if (isPlaying)
+                  Positioned.fill(
+                    child: Icon(
+                      Icons.play_arrow_rounded,
+                      color: theme.colorScheme.primary.withValues(alpha: .06),
+                      size: 120,
                     ),
                   ),
-                ],
-              ),
+
+                InkWell(
+                  onTap: _onTap,
+                  onSecondaryTapUp: (d) => _onSecondaryTap(context, d),
+                  child: Column(
+                    children: [
+                      // Icons row
+                      if (hasIcons)
+                        Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: Row(
+                            children: [
+                              const Spacer(),
+                              if (showLoadWarningIcon)
+                                const Tooltip(
+                                  message: 'Audio failed to load',
+                                  child: Icon(
+                                    Icons.warning_rounded,
+                                    size: 20,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+
+                      // Title
+                      Expanded(
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(
+                              audioFile.name,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
 
