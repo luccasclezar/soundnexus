@@ -6,9 +6,9 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:interactive_slider/interactive_slider.dart';
 import 'package:soundnexus/features/project/presentation/project_page_view_model.dart';
 import 'package:soundnexus/features/project/presentation/properties_drawer.dart';
+import 'package:soundnexus/features/project/presentation/widgets/volume_slider.dart';
 import 'package:soundnexus/features/projects/data/projects_repository.dart';
 import 'package:soundnexus/features/projects/domain/audio_file.dart';
 import 'package:soundnexus/features/projects/domain/project.dart';
@@ -209,28 +209,14 @@ class _ControlBar extends StatelessWidget {
               const Gap(16),
 
               // Volume Slider
-              RotatedBox(
-                quarterTurns: 3,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 300),
-                  child: Builder(
-                    builder: (context) {
-                      final volume = vm.watchOnly(context, (e) => e.volume);
-
-                      return InteractiveSlider(
-                        centerIcon: Text(volume.toStringAsFixed(2)),
-                        startIcon: const Icon(Icons.volume_down_rounded),
-                        endIcon: const Icon(Icons.volume_up_rounded),
-                        iconPosition: IconPosition.inside,
-                        padding: EdgeInsets.zero,
-                        initialProgress: volume,
-                        unfocusedHeight: 28,
-                        unfocusedMargin: EdgeInsets.zero,
-                        focusedHeight: 36,
-                        onChanged: vm.setVolume,
-                      );
-                    },
-                  ),
+              SizedBox(
+                height: 300,
+                child: VolumeSlider(
+                  axis: Axis.vertical,
+                  crossAxisDraggingSize: 36,
+                  crossAxisSize: 28,
+                  volume: vm.volume,
+                  onVolumeChanged: vm.setVolume,
                 ),
               ),
 
@@ -576,7 +562,7 @@ class _SoundBoardTileContent extends StatelessWidget {
                 if (isPlaying)
                   Positioned.fill(
                     child: Icon(
-                      Icons.play_arrow_rounded,
+                      Icons.multitrack_audio_rounded,
                       color: theme.colorScheme.primary.withValues(alpha: .06),
                       size: 120,
                     ),
@@ -626,23 +612,14 @@ class _SoundBoardTileContent extends StatelessWidget {
           ),
 
           // Volume slider
-          InteractiveSlider(
-            centerIcon: Text(
-              audioFile.volume.toStringAsFixed(2),
-            ),
-            startIcon: const Icon(Icons.volume_down_rounded),
-            endIcon: const Icon(Icons.volume_up_rounded),
-            iconSize: 16,
-            style: theme.textTheme.bodySmall,
-            focusedHeight: 24,
-            iconPosition: IconPosition.inside,
-            initialProgress: audioFile.volume,
-            padding: EdgeInsets.zero,
-            unfocusedHeight: 24,
-            unfocusedMargin: EdgeInsets.zero,
-            shapeBorder: const Border(),
-            onChanged: (value) => vm.setAudioFile(
-              audioFile.copyWith(volume: value),
+          VolumeSlider(
+            axis: Axis.horizontal,
+            crossAxisDraggingSize: 32,
+            crossAxisSize: 24,
+            hasRoundedCorners: false,
+            volume: audioFile.volume,
+            onVolumeChanged: (volume) => vm.setAudioFile(
+              audioFile.copyWith(volume: volume),
               x,
               y,
             ),
