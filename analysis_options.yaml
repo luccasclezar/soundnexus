@@ -4,3 +4,4 @@ analyzer:
   errors:
     public_member_api_docs: ignore
     cascade_invocations: ignore
+    avoid_positional_boolean_parameters: ignore
