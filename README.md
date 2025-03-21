@@ -19,7 +19,7 @@ of sounds simultaneously.
 
 The project's organization is based on Flutter's MVVM architecture. State
 management was made as simple as possible, using `ChangeNotifier` for View
-Models, `context_watcher` for reactivity and `get_it` as service locator.
+Models, `context_watch` for reactivity and `get_it` as service locator.
 
 For more information on how it works, read [Architecting Flutter Apps](https://docs.flutter.dev/app-architecture).
 
