@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:soundnexus/features/projects/domain/audio_file.dart';
+import 'package:soundnexus/features/projects/domain/project_tab.dart';
 
 part 'project.freezed.dart';
 part 'project.g.dart';
@@ -9,16 +9,23 @@ class Project with _$Project {
   const factory Project({
     required String id,
     required String name,
-    required int columns,
     required int rows,
-    required Map<String, AudioFile> audioFiles,
+    required int columns,
+    required Map<String, ProjectTab> tabs,
   }) = _Project;
 
   factory Project.empty({required String id, required String name}) {
     return Project(
       id: id,
       name: name,
-      audioFiles: const {},
+      tabs: {
+        'default': const ProjectTab(
+          id: 'default',
+          audioFiles: {},
+          index: 0,
+          name: 'Main',
+        ),
+      },
       columns: 3,
       rows: 3,
     );

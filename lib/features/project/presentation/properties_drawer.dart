@@ -52,7 +52,7 @@ class _PropertiesDrawerState extends State<PropertiesDrawer>
     }
 
     final editingAudios = editingAudiosPositions
-        .map((e) => vm.getAudioFileByString(e))
+        .map((e) => vm.getAudioFileByString(vm.currentTab, e))
         .whereType<AudioFile>();
     final firstAudio = editingAudios.first;
 

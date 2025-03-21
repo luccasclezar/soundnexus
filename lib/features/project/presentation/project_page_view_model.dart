@@ -1,11 +1,14 @@
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/foundation.dart';
+import 'package:collection/collection.dart';
+import 'package:flutter/material.dart';
 import 'package:soundnexus/features/projects/data/projects_repository.dart';
 import 'package:soundnexus/features/projects/domain/audio_file.dart';
 import 'package:soundnexus/features/projects/domain/project.dart';
+import 'package:soundnexus/features/projects/domain/project_tab.dart';
 import 'package:soundnexus/global/extensions_on_double.dart';
+import 'package:uuid/v4.dart';
 
 enum AudioError { unknown, notFound }
 
@@ -16,6 +19,7 @@ class ProjectPageViewModel extends ChangeNotifier {
     init();
   }
 
+  int currentTabIndex = 0;
   String error = '';
   ProjectView view = ProjectView.normal;
   bool isLoading = true;
@@ -41,15 +45,22 @@ class ProjectPageViewModel extends ChangeNotifier {
   final Map<String, AudioPlayer> _players = {};
   late final StreamSubscription<Project> _projectStreamSub;
 
+  TabController? _tabController;
+  TabController get tabController => _tabController!;
+
   /// Players state (playing or paused).
   ///
   /// As players states are changed asynchronically, this map is used to keep
   /// track of the players state.
   final Map<String, bool> _playersState = {};
 
+  List<AudioFile> get audioFiles =>
+      _project!.tabs.values.expand((e) => e.audioFiles.values).toList();
+  ProjectTab get currentTab => getTabByIndex(currentTabIndex);
   bool get isEditing => view == ProjectView.edit;
   bool get isEditingShortcuts => view == ProjectView.shortcut;
   bool get isNormalView => view == ProjectView.normal;
+  List<ProjectTab> get tabs => _project!.tabs.values.toList();
 
   @override
   void dispose() {
@@ -58,6 +69,7 @@ class ProjectPageViewModel extends ChangeNotifier {
     }
 
     _projectStreamSub.cancel();
+    tabController.dispose();
 
     super.dispose();
   }
@@ -73,7 +85,7 @@ class ProjectPageViewModel extends ChangeNotifier {
 
         if (_project != null) {
           // Update all project audios.
-          for (final audioFile in _project!.audioFiles.values) {
+          for (final audioFile in audioFiles) {
             _updatePlayer(audioFile);
             audioIdsToKeep.add(audioFile.id);
           }
@@ -105,8 +117,19 @@ class ProjectPageViewModel extends ChangeNotifier {
     );
   }
 
-  Future<void> deleteAudioFile(int x, int y) async {
-    final audioId = getAudioFile(x, y)?.id;
+  void addTab(String name) {
+    final newTab = ProjectTab(
+      id: const UuidV4().generate(),
+      index: project.tabs.length,
+      name: name,
+      audioFiles: {},
+    );
+
+    _projectsRepository.addTab(projectId, newTab);
+  }
+
+  Future<void> deleteAudioFile(ProjectTab tab, int x, int y) async {
+    final audioId = getAudioFile(tab, x, y)?.id;
 
     if (audioId == null) {
       return;
@@ -117,15 +140,50 @@ class ProjectPageViewModel extends ChangeNotifier {
 
     notifyListeners();
 
-    await _projectsRepository.setAudioFile(projectId, null, x, y);
+    await _projectsRepository.setAudioFile(projectId, tab, null, x, y);
   }
 
-  AudioFile? getAudioFile(int x, int y) {
-    return project.audioFiles['$x:$y'];
+  /// Deletes [tab] from the project.
+  void deleteTab(ProjectTab tab) {
+    final tabIndex =
+        project.tabs.values.toList().indexWhere((e) => e.id == tab.id);
+
+    _projectsRepository.updateProject(
+      project.copyWith(tabs: {...project.tabs}..remove(tab.id)),
+    );
+
+    if (currentTabIndex >= tabIndex) {
+      currentTabIndex--;
+      _tabController?.index = currentTabIndex;
+      notifyListeners();
+    }
   }
 
-  AudioFile? getAudioFileByString(String positionId) {
-    return project.audioFiles[positionId];
+  AudioFile? getAudioFile(ProjectTab tab, int x, int y) {
+    return tab.audioFiles['$x:$y'];
+  }
+
+  AudioFile? getAudioFileByString(ProjectTab tab, String positionId) {
+    return tab.audioFiles[positionId];
+  }
+
+  ProjectTab getTabByIndex(int index) {
+    return project.tabs.values.sortedBy<num>((e) => e.index)[index];
+  }
+
+  void updateTabController(TickerProviderStateMixin vsync, int tabsLength) {
+    _tabController?.dispose();
+
+    _tabController = TabController(
+      initialIndex: currentTabIndex,
+      length: tabsLength,
+      vsync: vsync,
+    );
+
+    _tabController!.addListener(() {
+      currentTabIndex = _tabController!.index;
+      notifyListeners();
+    });
   }
 
   /// Returns true if the specified audio is playing.
@@ -136,7 +194,13 @@ class ProjectPageViewModel extends ChangeNotifier {
   }
 
   Future<void> moveAudioFile(AudioFile audio, int newX, int newY) async {
-    return _projectsRepository.moveAudioFile(projectId, audio, newX, newY);
+    return _projectsRepository.moveAudioFile(
+      projectId,
+      currentTab,
+      audio,
+      newX,
+      newY,
+    );
   }
 
   void onEditPressed() {
@@ -161,7 +225,7 @@ class ProjectPageViewModel extends ChangeNotifier {
       await _updatePlayer(audio);
     }
 
-    await _projectsRepository.setAudioFile(projectId, audio, x, y);
+    await _projectsRepository.setAudioFile(projectId, currentTab, audio, x, y);
   }
 
   void setView(ProjectView view) {
@@ -176,14 +240,16 @@ class ProjectPageViewModel extends ChangeNotifier {
   void setVolume(double value) {
     volume = value.toFixed(2);
 
+    final audioFiles = this.audioFiles;
+
     // When setting global volume, update the volume of all the Audio_players.
-    for (final audio in project.audioFiles.values) {
+    for (final audio in audioFiles) {
       _updatePlayer(audio);
     }
 
     for (final entry in _players.entries) {
       final id = entry.key;
-      final audio = project.audioFiles.values.firstWhere((e) => e.id == id);
+      final audio = audioFiles.firstWhere((e) => e.id == id);
       final player = entry.value;
 
       player.setVolume(audio.volume * value);
@@ -203,8 +269,8 @@ class ProjectPageViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleAudio(int x, int y) {
-    final audio = getAudioFile(x, y);
+  void toggleAudio(ProjectTab tab, int x, int y) {
+    final audio = getAudioFile(tab, x, y);
 
     if (audio == null) {
       return;
@@ -236,7 +302,7 @@ class ProjectPageViewModel extends ChangeNotifier {
 
   void updateEditingAudios(AudioFile Function(AudioFile audio) callback) {
     for (final positionId in editingAudios) {
-      final audio = getAudioFileByString(positionId);
+      final audio = getAudioFileByString(currentTab, positionId);
 
       if (audio == null) {
         continue;

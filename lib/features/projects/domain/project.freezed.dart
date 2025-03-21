@@ -22,9 +22,9 @@ Project _$ProjectFromJson(Map<String, dynamic> json) {
 mixin _$Project {
   String get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
-  int get columns => throw _privateConstructorUsedError;
   int get rows => throw _privateConstructorUsedError;
-  Map<String, AudioFile> get audioFiles => throw _privateConstructorUsedError;
+  int get columns => throw _privateConstructorUsedError;
+  Map<String, ProjectTab> get tabs => throw _privateConstructorUsedError;
 
   /// Serializes this Project to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -43,9 +43,9 @@ abstract class $ProjectCopyWith<$Res> {
   $Res call(
       {String id,
       String name,
-      int columns,
       int rows,
-      Map<String, AudioFile> audioFiles});
+      int columns,
+      Map<String, ProjectTab> tabs});
 }
 
 /// @nodoc
@@ -65,9 +65,9 @@ class _$ProjectCopyWithImpl<$Res, $Val extends Project>
   $Res call({
     Object? id = null,
     Object? name = null,
-    Object? columns = null,
     Object? rows = null,
-    Object? audioFiles = null,
+    Object? columns = null,
+    Object? tabs = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -78,18 +78,18 @@ class _$ProjectCopyWithImpl<$Res, $Val extends Project>
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
-      columns: null == columns
-          ? _value.columns
-          : columns // ignore: cast_nullable_to_non_nullable
-              as int,
       rows: null == rows
           ? _value.rows
           : rows // ignore: cast_nullable_to_non_nullable
               as int,
-      audioFiles: null == audioFiles
-          ? _value.audioFiles
-          : audioFiles // ignore: cast_nullable_to_non_nullable
-              as Map<String, AudioFile>,
+      columns: null == columns
+          ? _value.columns
+          : columns // ignore: cast_nullable_to_non_nullable
+              as int,
+      tabs: null == tabs
+          ? _value.tabs
+          : tabs // ignore: cast_nullable_to_non_nullable
+              as Map<String, ProjectTab>,
     ) as $Val);
   }
 }
@@ -104,9 +104,9 @@ abstract class _$$ProjectImplCopyWith<$Res> implements $ProjectCopyWith<$Res> {
   $Res call(
       {String id,
       String name,
-      int columns,
       int rows,
-      Map<String, AudioFile> audioFiles});
+      int columns,
+      Map<String, ProjectTab> tabs});
 }
 
 /// @nodoc
@@ -124,9 +124,9 @@ class __$$ProjectImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? name = null,
-    Object? columns = null,
     Object? rows = null,
-    Object? audioFiles = null,
+    Object? columns = null,
+    Object? tabs = null,
   }) {
     return _then(_$ProjectImpl(
       id: null == id
@@ -137,18 +137,18 @@ class __$$ProjectImplCopyWithImpl<$Res>
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
-      columns: null == columns
-          ? _value.columns
-          : columns // ignore: cast_nullable_to_non_nullable
-              as int,
       rows: null == rows
           ? _value.rows
           : rows // ignore: cast_nullable_to_non_nullable
               as int,
-      audioFiles: null == audioFiles
-          ? _value._audioFiles
-          : audioFiles // ignore: cast_nullable_to_non_nullable
-              as Map<String, AudioFile>,
+      columns: null == columns
+          ? _value.columns
+          : columns // ignore: cast_nullable_to_non_nullable
+              as int,
+      tabs: null == tabs
+          ? _value._tabs
+          : tabs // ignore: cast_nullable_to_non_nullable
+              as Map<String, ProjectTab>,
     ));
   }
 }
@@ -159,10 +159,10 @@ class _$ProjectImpl implements _Project {
   const _$ProjectImpl(
       {required this.id,
       required this.name,
-      required this.columns,
       required this.rows,
-      required final Map<String, AudioFile> audioFiles})
-      : _audioFiles = audioFiles;
+      required this.columns,
+      required final Map<String, ProjectTab> tabs})
+      : _tabs = tabs;
 
   factory _$ProjectImpl.fromJson(Map<String, dynamic> json) =>
       _$$ProjectImplFromJson(json);
@@ -172,20 +172,20 @@ class _$ProjectImpl implements _Project {
   @override
   final String name;
   @override
-  final int columns;
-  @override
   final int rows;
-  final Map<String, AudioFile> _audioFiles;
   @override
-  Map<String, AudioFile> get audioFiles {
-    if (_audioFiles is EqualUnmodifiableMapView) return _audioFiles;
+  final int columns;
+  final Map<String, ProjectTab> _tabs;
+  @override
+  Map<String, ProjectTab> get tabs {
+    if (_tabs is EqualUnmodifiableMapView) return _tabs;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableMapView(_audioFiles);
+    return EqualUnmodifiableMapView(_tabs);
   }
 
   @override
   String toString() {
-    return 'Project(id: $id, name: $name, columns: $columns, rows: $rows, audioFiles: $audioFiles)';
+    return 'Project(id: $id, name: $name, rows: $rows, columns: $columns, tabs: $tabs)';
   }
 
   @override
@@ -195,16 +195,15 @@ class _$ProjectImpl implements _Project {
             other is _$ProjectImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
-            (identical(other.columns, columns) || other.columns == columns) &&
             (identical(other.rows, rows) || other.rows == rows) &&
-            const DeepCollectionEquality()
-                .equals(other._audioFiles, _audioFiles));
+            (identical(other.columns, columns) || other.columns == columns) &&
+            const DeepCollectionEquality().equals(other._tabs, _tabs));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, columns, rows,
-      const DeepCollectionEquality().hash(_audioFiles));
+  int get hashCode => Object.hash(runtimeType, id, name, rows, columns,
+      const DeepCollectionEquality().hash(_tabs));
 
   /// Create a copy of Project
   /// with the given fields replaced by the non-null parameter values.
@@ -226,9 +225,9 @@ abstract class _Project implements Project {
   const factory _Project(
       {required final String id,
       required final String name,
-      required final int columns,
       required final int rows,
-      required final Map<String, AudioFile> audioFiles}) = _$ProjectImpl;
+      required final int columns,
+      required final Map<String, ProjectTab> tabs}) = _$ProjectImpl;
 
   factory _Project.fromJson(Map<String, dynamic> json) = _$ProjectImpl.fromJson;
 
@@ -237,11 +236,11 @@ abstract class _Project implements Project {
   @override
   String get name;
   @override
-  int get columns;
-  @override
   int get rows;
   @override
-  Map<String, AudioFile> get audioFiles;
+  int get columns;
+  @override
+  Map<String, ProjectTab> get tabs;
 
   /// Create a copy of Project
   /// with the given fields replaced by the non-null parameter values.

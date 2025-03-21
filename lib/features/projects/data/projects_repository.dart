@@ -4,6 +4,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:soundnexus/features/projects/domain/audio_file.dart';
 import 'package:soundnexus/features/projects/domain/project.dart';
 import 'package:soundnexus/features/projects/domain/project_info.dart';
+import 'package:soundnexus/features/projects/domain/project_tab.dart';
 
 abstract class ProjectsRepository {
   void dispose();
@@ -15,13 +16,23 @@ abstract class ProjectsRepository {
   Stream<List<ProjectInfo>> streamProjects();
   Future<void> updateProject(Project value);
 
+  /// Updates the project with the given [projectId] and adds the [tab] to it.
+  Future<void> addTab(String projectId, ProjectTab tab);
+
   Future<void> moveAudioFile(
     String projectId,
+    ProjectTab tab,
     AudioFile audio,
     int newX,
     int newY,
   );
-  Future<void> setAudioFile(String projectId, AudioFile? audio, int x, int y);
+  Future<void> setAudioFile(
+    String projectId,
+    ProjectTab tab,
+    AudioFile? audio,
+    int x,
+    int y,
+  );
 }
 
 class LocalProjectsRepository implements ProjectsRepository {
@@ -52,6 +63,16 @@ class LocalProjectsRepository implements ProjectsRepository {
   }
 
   @override
+  Future<void> addTab(String projectId, ProjectTab tab) async {
+    final project = await getProject(projectId);
+
+    return _getStorage.write(
+      'project_$projectId',
+      project.copyWith(tabs: {...project.tabs}..[tab.id] = tab).toJson(),
+    );
+  }
+
+  @override
   Future<void> deleteProject(String id) async {
     final projects = (_getStorage.read<List<dynamic>>('projects') ?? [])
         .map((e) => ProjectInfo.fromJson(e as Map<String, dynamic>))
@@ -76,13 +97,14 @@ class LocalProjectsRepository implements ProjectsRepository {
   @override
   Future<void> moveAudioFile(
     String projectId,
+    ProjectTab tab,
     AudioFile audio,
     int newX,
     int newY,
   ) async {
     final project = await getProject(projectId);
 
-    final audioFiles = {...project.audioFiles};
+    final audioFiles = {...tab.audioFiles};
     final oldX = audio.positionX;
     final oldY = audio.positionY;
 
@@ -92,20 +114,26 @@ class LocalProjectsRepository implements ProjectsRepository {
 
     await _getStorage.write(
       'project_$projectId',
-      project.copyWith(audioFiles: audioFiles).toJson(),
+      project
+          .copyWith(
+            tabs: {...project.tabs}..[tab.id] =
+                tab.copyWith(audioFiles: audioFiles),
+          )
+          .toJson(),
     );
   }
 
   @override
   Future<void> setAudioFile(
     String projectId,
+    ProjectTab tab,
     AudioFile? audio,
     int x,
     int y,
   ) async {
     final project = await getProject(projectId);
 
-    final audioFiles = {...project.audioFiles};
+    final audioFiles = {...tab.audioFiles};
 
     if (audio == null) {
       audioFiles.remove('$x:$y');
@@ -115,7 +143,12 @@ class LocalProjectsRepository implements ProjectsRepository {
 
     await _getStorage.write(
       'project_$projectId',
-      project.copyWith(audioFiles: audioFiles).toJson(),
+      project
+          .copyWith(
+            tabs: {...project.tabs}..[tab.id] =
+                tab.copyWith(audioFiles: audioFiles),
+          )
+          .toJson(),
     );
   }
 

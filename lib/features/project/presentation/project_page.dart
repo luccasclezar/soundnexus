@@ -12,6 +12,7 @@ import 'package:soundnexus/features/project/presentation/widgets/volume_slider.d
 import 'package:soundnexus/features/projects/data/projects_repository.dart';
 import 'package:soundnexus/features/projects/domain/audio_file.dart';
 import 'package:soundnexus/features/projects/domain/project.dart';
+import 'package:soundnexus/features/projects/domain/project_tab.dart';
 import 'package:soundnexus/global/globals.dart';
 import 'package:soundnexus/global/widgets/app_draggable.dart';
 import 'package:soundnexus/global/widgets/spin_box.dart';
@@ -128,9 +129,147 @@ class ProjectPage extends VMWidget<ProjectPageViewModel> {
             ),
         ],
         forceMaterialTransparency: true,
-        title: isReady ? Text(vm.project.name) : null,
+        title: isReady ? _Titlebar(vm) : null,
       ),
       body: body,
+    );
+  }
+}
+
+class _Titlebar extends StatefulWidget {
+  const _Titlebar(this.vm);
+
+  final ProjectPageViewModel vm;
+
+  @override
+  State<_Titlebar> createState() => _TitlebarState();
+}
+
+class _TitlebarState extends State<_Titlebar> with TickerProviderStateMixin {
+  @override
+  void initState() {
+    super.initState();
+    widget.vm.updateTabController(this, widget.vm.project.tabs.length);
+  }
+
+  Future<void> _onAddTabPressed() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        var tabName = '';
+
+        return AlertDialog(
+          title: const Text('New Tab'),
+          content: TextField(
+            onChanged: (value) => tabName = value,
+            decoration: const InputDecoration(hintText: 'Tab name'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => context.pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => context.pop(tabName),
+              child: const Text('Create'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    widget.vm.addTab(result);
+    widget.vm.currentTabIndex = widget.vm.project.tabs.length;
+    widget.vm.updateTabController(this, widget.vm.project.tabs.length + 1);
+  }
+
+  Future<void> _onTabSecondaryTap(TapUpDetails details, ProjectTab tab) async {
+    final vm = widget.vm;
+
+    final offset = details.globalPosition;
+
+    await showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(offset.dx, offset.dy, offset.dx, 0),
+      items: [
+        PopupMenuItem<void>(
+          onTap: () {
+            vm.deleteTab(tab);
+            vm.updateTabController(this, vm.project.tabs.length - 1);
+          },
+          child: const Text('Delete'),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final tabs = widget.vm.watchOnly(context, (e) => e.tabs);
+
+    return Row(
+      children: [
+        // Title
+        Text(widget.vm.watchOnly(context, (e) => e.project.name)),
+
+        // Divider
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: SizedBox(
+            height: 24,
+            width: 1,
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: theme.dividerColor),
+            ),
+          ),
+        ),
+
+        // Tabs
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // Tabs
+                TabBar(
+                  controller: widget.vm.tabController,
+                  dividerColor: Colors.transparent,
+                  tabAlignment: TabAlignment.start,
+                  isScrollable: true,
+                  tabs: [
+                    for (final tab in tabs)
+                      GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onSecondaryTapUp: (details) =>
+                            _onTabSecondaryTap(details, tab),
+                        child: Tab(
+                          text: tab.name,
+                        ),
+                      ),
+                  ],
+                ),
+
+                // Gap
+                const Gap(16),
+
+                // Add new tab button
+                TextButton.icon(
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Add new tab'),
+                  onPressed: _onAddTabPressed,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -404,8 +543,10 @@ class _SoundBoardTileState extends State<_SoundBoardTile> {
     final x = widget.x;
     final y = widget.y;
 
-    final audioFile =
-        vm.watchOnly(context, (e) => e.getAudioFile(widget.x, widget.y));
+    final audioFile = vm.watchOnly(
+      context,
+      (e) => e.getAudioFile(e.currentTab, widget.x, widget.y),
+    );
 
     return SizedBox(
       height: _maxTileSize,
@@ -490,7 +631,7 @@ class _SoundBoardTileContent extends StatelessWidget {
     if (vm.isEditing) {
       vm.selectAudio(audioFile!);
     } else if (vm.isNormalView) {
-      vm.toggleAudio(x, y);
+      vm.toggleAudio(vm.currentTab, x, y);
     }
   }
 
