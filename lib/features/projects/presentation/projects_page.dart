@@ -40,8 +40,7 @@ class _ProjectsPageState extends VMState<ProjectsPage, ProjectsPageViewModel> {
     final result = await showDialog<String>(
       context: context,
       builder: (context) {
-        // TODO(Luccas): Figure out how to dispose this controller.
-        final controller = TextEditingController();
+        var projectName = '';
 
         return AlertDialog(
           actions: [
@@ -50,15 +49,15 @@ class _ProjectsPageState extends VMState<ProjectsPage, ProjectsPageViewModel> {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () => Navigator.pop(context, controller.text),
+              onPressed: () => Navigator.pop(context, projectName),
               child: const Text('OK'),
             ),
           ],
           content: TextField(
             autofocus: true,
-            controller: controller,
             decoration: const InputDecoration(hintText: 'Name'),
-            onSubmitted: (value) => Navigator.pop(context, value),
+            onChanged: (value) => projectName = value,
+            onSubmitted: (value) => Navigator.pop(context, projectName),
           ),
           title: const Text('Add new project'),
         );
