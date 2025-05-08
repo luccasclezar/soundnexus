@@ -4,6 +4,8 @@ SoundNexus is a multiplatform soundboard app made with Flutter to use with
 tabletop RPGs, podcasts, or any other activity where you need to control dozens
 of sounds simultaneously.
 
+![Screenshot](assets/soundnexus_screenshot.png)
+
 ## Tasks
 
 - [x] Simultaneous playing audios
