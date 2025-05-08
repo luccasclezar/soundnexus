@@ -171,6 +171,8 @@ class ProjectPageViewModel extends ChangeNotifier {
     var player = _players[audio.id];
 
     if (player == null) {
+      // TODO(luccasclezar): Remove playing icon from SoundBoardTile when
+      //  non-looping AudioPlayers finish.
       player = _players[audio.id] = AudioPlayer();
       player.setSource(DeviceFileSource(audio.path));
     }
