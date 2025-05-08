@@ -198,7 +198,7 @@ class _SoundBoardTileContent extends StatelessWidget {
     if (vm.isEditing) {
       vm.selectAudio(audioFile!);
     } else if (vm.isNormalView) {
-      vm.toggleAudio(vm.currentTab, x, y);
+      vm.toggleAudioPosition(vm.currentTab, x, y);
     }
   }
 
@@ -257,7 +257,13 @@ class _SoundBoardTileContent extends StatelessWidget {
           vm.watchOnly(context, (e) => e.isAudioPlaying(audioFile.id));
       final showLoadWarningIcon =
           vm.watchOnly(context, (e) => e.audiosWithError[audioFile.id] != null);
-      final hasIcons = showLoadWarningIcon;
+      final hasIcons = showLoadWarningIcon || audioFile.shortcut.isNotEmpty;
+
+      final shortcutIconBackgroundColor =
+          isEditing ? theme.colorScheme.primary : theme.colorScheme.secondary;
+      final shortcutIconForegroundColor = isEditing
+          ? theme.colorScheme.onPrimary
+          : theme.colorScheme.onSecondary;
 
       child = Column(
         children: [
@@ -279,42 +285,70 @@ class _SoundBoardTileContent extends StatelessWidget {
                 InkWell(
                   onTap: _onTap,
                   onSecondaryTapUp: (d) => _onSecondaryTap(context, d),
-                  child: Column(
-                    children: [
-                      // Icons row
-                      if (hasIcons)
-                        Padding(
-                          padding: const EdgeInsets.all(6),
-                          child: Row(
-                            children: [
-                              const Spacer(),
-                              if (showLoadWarningIcon)
-                                const Tooltip(
-                                  message: 'Audio failed to load',
-                                  child: Icon(
-                                    Icons.warning_rounded,
-                                    size: 20,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-
-                      // Title
-                      Expanded(
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Text(
-                              audioFile.name,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        audioFile.name,
+                        textAlign: TextAlign.center,
                       ),
-                    ],
+                    ),
                   ),
                 ),
+
+                // Icons row
+                if (hasIcons)
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        right: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          // Shortcut icon
+                          if (audioFile.shortcut.isNotEmpty)
+                            Container(
+                              height: 30,
+                              width: 30,
+                              decoration: BoxDecoration(
+                                borderRadius: const BorderRadius.only(
+                                  bottomRight: Radius.circular(6),
+                                ),
+                                color: shortcutIconBackgroundColor,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  audioFile.shortcut,
+                                  style: theme.textTheme.bodyMedium!.copyWith(
+                                    color: shortcutIconForegroundColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontFeatures: [
+                                      const FontFeature.tabularFigures(),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                          // Spacer
+                          const Spacer(),
+
+                          // Load error icon
+                          if (showLoadWarningIcon)
+                            const Tooltip(
+                              message: 'Audio failed to load',
+                              child: Icon(
+                                Icons.warning_rounded,
+                                size: 20,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -343,7 +377,7 @@ class _SoundBoardTileContent extends StatelessWidget {
       duration: Durations.medium1,
       scale: isDroppingAudio ? 1.1 : 1,
       child: Material(
-        clipBehavior: Clip.hardEdge,
+        clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           borderRadius: _tileBorderRadius,
           side: BorderSide(

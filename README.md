@@ -12,7 +12,7 @@ of sounds simultaneously.
 - [x] Independent and global volumes
 - [x] Independent loop option
 - [x] Tabs on Project page
-- [ ] Keyboard shortcuts to play/pause audios
+- [x] Keyboard shortcuts to play/pause audios
 - [ ] Time seeker for each audio
 - [ ] Group audios together with options to play the group in sequence or simultaneously
 - [ ] Unit/UI tests

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:soundnexus/features/project/presentation/project_page_view_model.dart';
 import 'package:soundnexus/features/projects/domain/audio_file.dart';
 
@@ -15,20 +16,29 @@ class _PropertiesDrawerState extends State<PropertiesDrawer>
     with TickerProviderStateMixin {
   final nameController = TextEditingController();
   final pathController = TextEditingController();
+
+  bool isEmptySelection = true;
+  bool isEditingShortcut = false;
   bool? loop;
   List<String> oldEditingAudios = [];
+  String shortcut = '[]';
 
   ProjectPageViewModel get vm => widget.vm;
 
   @override
   void initState() {
     super.initState();
+
+    HardwareKeyboard.instance.addHandler(_onKeyEvent);
     vm.addListener(updateSelection);
     updateSelection();
   }
 
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onKeyEvent);
+    nameController.dispose();
+    pathController.dispose();
     vm.removeListener(updateSelection);
     super.dispose();
   }
@@ -44,12 +54,15 @@ class _PropertiesDrawerState extends State<PropertiesDrawer>
     setState(() {});
 
     if (editingAudiosPositions.isEmpty) {
+      isEmptySelection = true;
       nameController.text = '';
       pathController.text = '';
       loop = false;
 
       return;
     }
+
+    isEmptySelection = false;
 
     final editingAudios = editingAudiosPositions
         .map((e) => vm.getAudioFileByString(vm.currentTab, e))
@@ -67,6 +80,26 @@ class _PropertiesDrawerState extends State<PropertiesDrawer>
     loop = editingAudios.every((e) => e.loop == firstAudio.loop)
         ? firstAudio.loop
         : null;
+
+    shortcut = editingAudios.every((e) => e.shortcut == firstAudio.shortcut)
+        ? firstAudio.shortcut
+        : '[]';
+  }
+
+  bool _onKeyEvent(KeyEvent event) {
+    final char = event.character;
+
+    if (!isEditingShortcut || char == null) {
+      return false;
+    }
+
+    vm.updateEditingAudios(
+      (audio) => audio.copyWith(shortcut: char.toUpperCase()),
+    );
+
+    setState(() => isEditingShortcut = false);
+
+    return true;
   }
 
   @override
@@ -96,6 +129,7 @@ class _PropertiesDrawerState extends State<PropertiesDrawer>
 
               // Name
               ListTile(
+                enabled: !isEmptySelection,
                 title: const Text('Name'),
                 subtitle: TextField(
                   controller: nameController,
@@ -111,6 +145,7 @@ class _PropertiesDrawerState extends State<PropertiesDrawer>
 
               // Path
               ListTile(
+                enabled: !isEmptySelection,
                 title: const Text('Path'),
                 subtitle: TextField(
                   controller: pathController,
@@ -135,6 +170,25 @@ class _PropertiesDrawerState extends State<PropertiesDrawer>
                     (audio) => audio.copyWith(loop: value!),
                   );
                 },
+              ),
+
+              // Shortcut
+              ListTile(
+                enabled: !isEmptySelection,
+                title: const Text('Shortcut'),
+                trailing: isEditingShortcut
+                    ? FilledButton(
+                        onPressed: isEmptySelection
+                            ? null
+                            : () => setState(() => isEditingShortcut = false),
+                        child: Text(shortcut),
+                      )
+                    : FilledButton.tonal(
+                        onPressed: isEmptySelection
+                            ? null
+                            : () => setState(() => isEditingShortcut = true),
+                        child: Text(shortcut),
+                      ),
               ),
             ],
           ),

@@ -12,7 +12,7 @@ import 'package:uuid/v4.dart';
 
 enum AudioError { unknown, notFound }
 
-enum ProjectView { normal, edit, shortcut }
+enum ProjectView { normal, edit }
 
 class ProjectPageViewModel extends ChangeNotifier {
   ProjectPageViewModel(this._projectsRepository, this.projectId) {
@@ -58,7 +58,6 @@ class ProjectPageViewModel extends ChangeNotifier {
       _project!.tabs.values.expand((e) => e.audioFiles.values).toList();
   ProjectTab get currentTab => getTabByIndex(currentTabIndex);
   bool get isEditing => view == ProjectView.edit;
-  bool get isEditingShortcuts => view == ProjectView.shortcut;
   bool get isNormalView => view == ProjectView.normal;
   List<ProjectTab> get tabs => _project!.tabs.values.toList();
 
@@ -167,6 +166,18 @@ class ProjectPageViewModel extends ChangeNotifier {
     return tab.audioFiles[positionId];
   }
 
+  /// Returns the [AudioPlayer] for the specified [audio].
+  AudioPlayer getAudioPlayer(AudioFile audio) {
+    var player = _players[audio.id];
+
+    if (player == null) {
+      player = _players[audio.id] = AudioPlayer();
+      player.setSource(DeviceFileSource(audio.path));
+    }
+
+    return player;
+  }
+
   ProjectTab getTabByIndex(int index) {
     return project.tabs.values.sortedBy<num>((e) => e.index)[index];
   }
@@ -184,6 +195,22 @@ class ProjectPageViewModel extends ChangeNotifier {
       currentTabIndex = _tabController!.index;
       notifyListeners();
     });
+  }
+
+  /// Handles toggling audios with the specified [shortcut].
+  bool handleShortcut(ProjectTab tab, String shortcut) {
+    final audiosWithShortcut = tab.audioFiles.values
+        .where((e) => e.shortcut == shortcut.toUpperCase());
+
+    if (audiosWithShortcut.isEmpty) {
+      return false;
+    }
+
+    for (final audio in audiosWithShortcut) {
+      toggleAudio(audio);
+    }
+
+    return true;
   }
 
   /// Returns true if the specified audio is playing.
@@ -207,11 +234,16 @@ class ProjectPageViewModel extends ChangeNotifier {
     setView(view == ProjectView.edit ? ProjectView.normal : ProjectView.edit);
   }
 
-  void onShortcutsPressed() {
-    // TODO(luccasclezar): Implement shortcuts editing.
-    setView(
-      view == ProjectView.shortcut ? ProjectView.normal : ProjectView.shortcut,
-    );
+  void playAudio(AudioFile audio) {
+    final player = getAudioPlayer(audio);
+
+    if (player.state != PlayerState.playing) {
+      player.resume();
+      _playersState[audio.id] = true;
+      isPlaying = true;
+
+      notifyListeners();
+    }
   }
 
   /// Sets [audio] as being edited.
@@ -269,19 +301,8 @@ class ProjectPageViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleAudio(ProjectTab tab, int x, int y) {
-    final audio = getAudioFile(tab, x, y);
-
-    if (audio == null) {
-      return;
-    }
-
-    var player = _players[audio.id];
-
-    if (player == null) {
-      player = _players[audio.id] = AudioPlayer();
-      player.setSource(DeviceFileSource(audio.path));
-    }
+  void toggleAudio(AudioFile audio) {
+    final player = getAudioPlayer(audio);
 
     if (player.state == PlayerState.playing) {
       player.pause();
@@ -294,6 +315,16 @@ class ProjectPageViewModel extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  void toggleAudioPosition(ProjectTab tab, int x, int y) {
+    final audio = getAudioFile(tab, x, y);
+
+    if (audio == null) {
+      return;
+    }
+
+    toggleAudio(audio);
   }
 
   Future<void> updateProject(Project value) {
@@ -315,10 +346,7 @@ class ProjectPageViewModel extends ChangeNotifier {
   }
 
   Future<void> _updatePlayer(AudioFile audio) async {
-    final id = audio.id;
-    var player = _players[id];
-
-    player ??= _players[id] = AudioPlayer();
+    final player = getAudioPlayer(audio);
 
     final targetVolume = audio.volume * volume;
     final targetReleaseMode = audio.loop ? ReleaseMode.loop : ReleaseMode.stop;

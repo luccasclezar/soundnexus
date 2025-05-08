@@ -1,5 +1,6 @@
 import 'package:context_watch/context_watch.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soundnexus/features/project/presentation/project_page_view_model.dart';
@@ -279,7 +280,7 @@ class _ControlBar extends StatelessWidget {
           padding: const EdgeInsets.all(8),
           child: Column(
             children: [
-              // Edit button`
+              // Edit button
               Builder(
                 builder: (context) {
                   final isEditing = vm.watchOnly(context, (e) => e.isEditing);
@@ -293,29 +294,6 @@ class _ControlBar extends StatelessWidget {
                     return IconButton(
                       icon: const Icon(Icons.edit_rounded),
                       onPressed: vm.onEditPressed,
-                    );
-                  }
-                },
-              ),
-
-              // Gap
-              const Gap(8),
-
-              // Shortcuts button
-              Builder(
-                builder: (context) {
-                  final isEditingShortcuts =
-                      vm.watchOnly(context, (e) => e.isEditingShortcuts);
-
-                  if (isEditingShortcuts) {
-                    return IconButton.filled(
-                      icon: const Icon(Icons.keyboard_rounded),
-                      onPressed: vm.onShortcutsPressed,
-                    );
-                  } else {
-                    return IconButton(
-                      icon: const Icon(Icons.keyboard_rounded),
-                      onPressed: vm.onShortcutsPressed,
                     );
                   }
                 },
@@ -389,10 +367,28 @@ class _SoundBoardState extends State<_SoundBoard> {
   final ScrollController hScrollController = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+
+    HardwareKeyboard.instance.addHandler(_onKeyPress);
+  }
+
+  @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onKeyPress);
     vScrollController.dispose();
     hScrollController.dispose();
     super.dispose();
+  }
+
+  bool _onKeyPress(KeyEvent event) {
+    final char = event.character;
+
+    if (char == null) {
+      return false;
+    }
+
+    return widget.vm.handleShortcut(widget.vm.currentTab, char);
   }
 
   @override
