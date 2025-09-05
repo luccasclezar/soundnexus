@@ -5,3 +5,5 @@ analyzer:
     public_member_api_docs: ignore
     cascade_invocations: ignore
     avoid_positional_boolean_parameters: ignore
+    document_ignores: ignore
+    avoid_catches_without_on_clauses: ignore
