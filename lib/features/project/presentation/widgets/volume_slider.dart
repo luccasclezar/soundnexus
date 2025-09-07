@@ -51,7 +51,7 @@ class _VolumeSliderState extends State<VolumeSlider> {
     final isHorizontal = widget.axis == Axis.horizontal;
 
     return AnimatedContainer(
-      clipBehavior: Clip.hardEdge,
+      clipBehavior: Clip.antiAlias,
       curve: Easing.standard,
       duration: Durations.medium1,
       decoration: BoxDecoration(
